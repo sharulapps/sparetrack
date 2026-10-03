@@ -631,6 +631,88 @@ body{
 
 .toast{ background:linear-gradient(135deg,#0D1F3C,#132B52); border:1px solid rgba(217,184,108,.3) }
 </style>
+<style>
+/* ══ RESPONSIVE LAYOUT ═══════════════════════════════════════
+   Phone  (<600)      full-screen app, top tab bar
+   Tablet (600-1023)  wider centered panel, 2-column cards
+   Desktop (>=1024)   wide panel with left sidebar nav, card grid */
+
+/* Phone tweaks */
+@media (max-width:599px){
+  .header{ padding:12px 14px }
+  .section{ padding:14px }
+  .nav-btn{ min-width:64px; flex:0 0 auto; padding:10px 8px 9px }
+  .sheet{ padding:20px 16px calc(28px + env(safe-area-inset-bottom)) }
+}
+@media (max-width:420px){
+  /* name + role already shown in the logout bar below */
+  #user-badge{ display:none!important }
+  .header > div:last-child{ flex-shrink:0 }
+  .logo{ min-width:0 }
+  .add-btn{ padding:8px 11px }
+  .logo-sub{ max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+  .search-wrap{ min-width:100% }
+  .search-row .filter-btn{ flex:1 }
+  .fr{ gap:10px }
+  .sval{ font-size:24px }
+}
+
+/* Tablet & up: clip corners without breaking sticky header/nav */
+@media (min-width:600px){
+  body{ padding:24px 20px }
+  .app-wrap{ max-width:860px; overflow:clip }
+  .section{ padding:22px 26px }
+  #parts-list, #alert-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; align-items:start }
+  #parts-list > *:not(.part-card), #alert-list > *:not(.alert-card){ grid-column:1/-1 }
+  #parts-list .part-card, #alert-list .alert-card{ margin-bottom:0 }
+  .stat-grid{ grid-template-columns:repeat(4,1fr) }
+  .sheet{ max-width:560px }
+  #m-excel-preview .sheet{ max-width:760px }
+}
+
+/* Desktop: sidebar layout */
+@media (min-width:1024px){
+  body{ padding:28px }
+  .app-wrap{ max-width:1320px; min-height:calc(100vh - 56px) }
+  .app-wrap:not([style*="none"]){
+    display:grid!important;
+    grid-template-columns:240px minmax(0,1fr);
+    grid-template-rows:auto auto auto 1fr;
+  }
+  .app-wrap > .sync-bar, .app-wrap > .header, .app-wrap > #logout-bar{ grid-column:1/-1 }
+  .app-wrap > .header{ padding:16px 28px }
+  .app-wrap > #logout-bar{ padding:8px 28px!important }
+  .app-wrap > .nav{
+    grid-column:1; grid-row:4;
+    flex-direction:column; gap:2px;
+    padding:18px 12px;
+    border-bottom:none; border-right:1px solid var(--border);
+    background:var(--bg2);
+    position:sticky; top:72px; align-self:start;
+    min-height:calc(100vh - 160px);
+    overflow:visible;
+  }
+  .app-wrap .nav-btn{
+    flex:0 0 auto; width:100%;
+    flex-direction:row; justify-content:flex-start; gap:12px;
+    padding:11px 14px; border-radius:10px;
+    font-size:12px; letter-spacing:.4px; text-align:left;
+    border-bottom:none; border-left:3px solid transparent;
+  }
+  .app-wrap .nav-btn svg{ width:18px; height:18px; flex-shrink:0 }
+  .app-wrap .nav-btn:hover{ background:rgba(10,22,40,.04); color:var(--text2) }
+  .app-wrap .nav-btn.active{ background:#fff; border-left-color:var(--gold); box-shadow:var(--shadow-sm) }
+  .app-wrap > .section{ grid-column:2; grid-row:4; padding:28px 32px; min-width:0 }
+  #parts-list, #alert-list{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px }
+  .search-row{ max-width:760px }
+  #rpt .exp-btn, #approval .exp-btn{ max-width:560px }
+  #stk-idle > .sub-btn, #users > .sub-btn{ max-width:320px }
+}
+@media (min-width:1440px){
+  #parts-list, #alert-list{ grid-template-columns:repeat(3,minmax(0,1fr)) }
+}
+</style>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script></script>
