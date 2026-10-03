@@ -555,6 +555,135 @@ body {
 #login-btn:hover { background: rgba(255,255,255,.92); transform: translateY(-1px) }
 #login-btn:disabled { opacity: .6; cursor: wait }
 </style>
+<style>
+/* ══ PREMIUM NAVY THEME ══════════════════════════════════════
+   App surface = deep navy. Overlays (.overlay/.sheet) sit outside
+   .app-wrap, so they keep the light tokens from :root (white modals). */
+:root{
+  --gold:#D9B86C; --gold2:#F1D9A0;
+  --blue-bg:#EEF4FF; --blue-text:#1D4ED8;
+  --green-text:#065F46; --red-text:#991B1B; --amber-text:#92400E;
+  --ink:#071226;
+}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(59,130,246,.18), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(217,184,108,.10), transparent 55%),
+    linear-gradient(160deg,#06101F 0%,#0A1A33 45%,#0C2142 100%) fixed;
+}
+@media (min-width:600px){
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(59,130,246,.18), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(217,184,108,.10), transparent 55%),
+      linear-gradient(160deg,#06101F 0%,#0A1A33 45%,#0C2142 100%) fixed;
+  }
+}
+
+.app-wrap{
+  --bg:      #11264A;
+  --bg2:     rgba(255,255,255,.045);
+  --bg3:     rgba(255,255,255,.08);
+  --surface: #13294F;
+  --text:    #EEF3FB;
+  --text2:   #B6C4DC;
+  --text3:   #7F93B4;
+  --text4:   #5B6F90;
+  --border:  rgba(255,255,255,.08);
+  --border2: rgba(255,255,255,.14);
+  --border3: rgba(217,184,108,.45);
+  --green-bg:rgba(16,185,129,.14); --green-t:#6EE7B7; --green-text:#6EE7B7;
+  --red-bg:  rgba(239,68,68,.14);  --red-t:#FCA5A5;   --red-text:#FCA5A5;
+  --amber-bg:rgba(245,158,11,.14); --amber-t:#FCD34D; --amber-text:#FCD34D;
+  --blue-bg: rgba(59,130,246,.16); --blue-text:#93C5FD;
+  --blue:    #60A5FA;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.25),0 4px 14px rgba(0,0,0,.18);
+  --shadow:   0 4px 10px rgba(0,0,0,.25),0 12px 32px rgba(0,0,0,.25);
+  background:linear-gradient(180deg,#0B1C38 0%,#0A1830 100%);
+  color:var(--text);
+}
+@media (min-width:600px){
+  .app-wrap{ box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.06),inset 0 1px 0 rgba(255,255,255,.04) }
+}
+
+/* Header & nav — frosted navy glass */
+.app-wrap .header{ background:rgba(9,22,44,.82); border-bottom:1px solid rgba(217,184,108,.16) }
+.app-wrap .logo-icon{ background:linear-gradient(135deg,#1E3A8A,#2563EB); box-shadow:0 4px 14px rgba(37,99,235,.35),inset 0 0 0 1px rgba(255,255,255,.12) }
+.app-wrap .logo-name{ color:#fff; letter-spacing:-.3px }
+.app-wrap .logo-name::after{ content:''; display:block; width:22px; height:2px; margin-top:3px; border-radius:2px; background:linear-gradient(90deg,var(--gold),transparent) }
+.app-wrap .add-btn{ background:linear-gradient(135deg,var(--gold2),var(--gold)); color:var(--ink); box-shadow:0 4px 14px rgba(217,184,108,.28) }
+.app-wrap .add-btn svg{ stroke:var(--ink) }
+.app-wrap .add-btn:hover{ background:linear-gradient(135deg,#F6E3B4,#E0C27C) }
+.app-wrap #user-badge{ background:rgba(217,184,108,.12)!important; color:var(--gold2)!important; border:1px solid rgba(217,184,108,.3) }
+.app-wrap #logout-bar{ background:rgba(255,255,255,.03)!important }
+.app-wrap .nav{ background:rgba(9,22,44,.82); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px) }
+.app-wrap .nav-btn{ color:var(--text3) }
+.app-wrap .nav-btn:hover{ color:var(--text2) }
+.app-wrap .nav-btn.active{ color:var(--gold2); border-bottom-color:var(--gold) }
+.app-wrap .sync-bar{ background:rgba(16,185,129,.10); border-bottom-color:rgba(16,185,129,.25); color:#6EE7B7 }
+
+/* Inputs & filters */
+.app-wrap input, .app-wrap select{ color-scheme:dark }
+.app-wrap .search-wrap input{ background:rgba(255,255,255,.05) }
+.app-wrap .search-wrap input:focus{ background:rgba(255,255,255,.08); border-color:var(--gold); box-shadow:0 0 0 3px rgba(217,184,108,.15) }
+.app-wrap .search-wrap input::placeholder{ color:var(--text3) }
+.app-wrap .filter-btn{ background:rgba(255,255,255,.04) }
+.app-wrap .filter-btn.on{ background:linear-gradient(135deg,var(--gold2),var(--gold)); color:var(--ink); border-color:transparent }
+
+/* Cards */
+.app-wrap .part-card{ background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.025)); border:1px solid var(--border) }
+.app-wrap .part-card:hover{ border-color:rgba(217,184,108,.3) }
+.app-wrap .part-card.low{ border-left:3px solid #F87171; background:linear-gradient(135deg,rgba(239,68,68,.10) 0%,rgba(255,255,255,.03) 60%) }
+.app-wrap .pname, .app-wrap .txn-name{ color:#fff }
+.app-wrap .pqty, .app-wrap .sval{ color:#fff }
+.app-wrap .sval.red{ color:#F87171 } .app-wrap .sval.green{ color:#34D399 } .app-wrap .sval.amber{ color:#FBBF24 }
+.app-wrap .act.rtn{ background:rgba(59,130,246,.16); color:#93C5FD; border-color:rgba(96,165,250,.3) }
+.app-wrap .act.in{ border-color:rgba(52,211,153,.3) } .app-wrap .act.out{ border-color:rgba(251,191,36,.3) }
+.app-wrap .stat{ background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02)); border:1px solid var(--border) }
+.app-wrap .stat::before{ background:linear-gradient(90deg,var(--gold),transparent); opacity:.7 }
+.app-wrap .sec-label{ color:var(--gold); opacity:.85 }
+.app-wrap .exp-btn{ color:var(--text) }
+.app-wrap .exp-btn:hover{ background:rgba(255,255,255,.07); border-color:var(--border3) }
+.app-wrap .alert-card{ background:rgba(239,68,68,.07); border-color:rgba(239,68,68,.2); border-left-color:#F87171; box-shadow:none }
+.app-wrap .alert-part, .app-wrap .alert-info{ color:#FCA5A5 }
+.app-wrap .alert-ic svg{ stroke:#F87171 }
+.app-wrap .sub-btn{ background:linear-gradient(135deg,#2563EB,#1D4ED8); box-shadow:0 6px 18px rgba(37,99,235,.35) }
+.app-wrap .sub-btn:hover{ background:linear-gradient(135deg,#3B82F6,#2563EB) }
+.app-wrap ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.15) }
+
+/* ── Modals: crisp white, premium ── */
+.overlay{ background:rgba(4,10,22,.62); backdrop-filter:blur(10px) saturate(120%); -webkit-backdrop-filter:blur(10px) saturate(120%) }
+.sheet{
+  background:#fff;
+  border-radius:26px 26px 0 0;
+  box-shadow:0 -10px 40px rgba(4,10,22,.35),0 0 0 1px rgba(10,22,40,.04);
+  position:relative;
+}
+.sheet::before{
+  content:''; display:block; width:42px; height:4px; border-radius:4px;
+  background:#D5DCE8; margin:-10px auto 16px;
+}
+.sheet::after{
+  content:''; position:absolute; top:0; left:24px; right:24px; height:3px;
+  border-radius:0 0 3px 3px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.8;
+}
+.sheet-title{ font-size:18px; letter-spacing:-.5px; padding-bottom:14px; border-bottom:1px solid #EEF1F6; margin-bottom:20px }
+.sheet .fg input, .sheet .fg select, .sheet .fg textarea{ background:#F7F9FC; border-color:#E2E8F1; color:#0A1628 }
+.sheet .fg input::placeholder, .sheet .fg textarea::placeholder{ color:#A3B1C6 }
+.sheet .fg input:focus, .sheet .fg select:focus, .sheet .fg textarea:focus{ background:#fff; border-color:#1B4FD8; box-shadow:0 0 0 4px rgba(27,79,216,.10) }
+.sheet .sub-btn{ background:linear-gradient(135deg,#0D1F3C,#1B3A6B); box-shadow:0 8px 20px rgba(10,22,40,.25); border-radius:12px }
+.sheet .sub-btn:hover{ background:linear-gradient(135deg,#112347,#21477F) }
+@media (min-width:600px){
+  .overlay{ align-items:center }
+  .sheet{ border-radius:22px; max-height:86vh; animation:sheetPop .28s cubic-bezier(.32,1.1,.64,1) }
+  .sheet::before{ display:none }
+}
+@keyframes sheetPop{ from{ opacity:0; transform:translateY(16px) scale(.98) } to{ opacity:1; transform:none } }
+
+.toast{ background:linear-gradient(135deg,#0D1F3C,#132B52); border:1px solid rgba(217,184,108,.3) }
+</style>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script></script>
 <script>
