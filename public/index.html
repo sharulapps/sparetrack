@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="SpareTrack">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#185FA5">
-<meta name="description" content="Sistem pengurusan sparepart - IN/OUT tracking, low stock alert, cloud sync">
+<meta name="description" content="Spare part management system - IN/OUT tracking, low stock alerts, cloud sync">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <style>
@@ -302,6 +302,7 @@ body {
 .b-ok  { background: var(--green-bg); color: var(--green-t) }
 .b-low { background: var(--red-bg);   color: var(--red-t) }
 .b-mid { background: var(--amber-bg); color: var(--amber-t) }
+.b-over { background: #EEF2FF; color: #3730A3 }
 
 .pb { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px }
 .pmeta { font-size: 12px; color: var(--text2); font-weight: 500 }
@@ -448,6 +449,12 @@ body {
 .sval.red   { color: var(--red) }
 .sval.green { color: var(--green) }
 .sval.amber { color: var(--amber) }
+.sval.indigo { color: #4338CA }
+.part-card.near { border-left: 3px solid var(--amber) }
+.part-card.over { border-left: 3px solid #6366F1 }
+.alert-card.near { border-color: rgba(217,119,6,.2); border-left-color: var(--amber); box-shadow: 0 2px 8px rgba(217,119,6,.06) }
+.alert-card.near .alert-part, .alert-card.near .alert-info { color: var(--amber-t) }
+.alert-card.near .alert-ic svg { stroke: var(--amber) }
 
 /* ── LABELS ───────────────────────────── */
 .sec-label { font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: .8px; text-transform: uppercase; margin-bottom: 12px }
@@ -652,7 +659,7 @@ body{
   .add-btn{ padding:8px 11px }
   .logo-sub{ max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
   .search-wrap{ min-width:100% }
-  .search-row .filter-btn{ flex:1 }
+  .search-row .filter-btn{ flex:1 1 calc(50% - 4px); padding:9px 8px }
   .fr{ gap:10px }
   .sval{ font-size:24px }
 }
@@ -668,7 +675,7 @@ body{
   #parts-list .part-card .pb{ flex:0 0 auto; flex-wrap:nowrap; gap:16px }
   #parts-list .part-card .pmeta{ white-space:nowrap }
   #parts-list .part-card:hover{ transform:none }
-  .stat-grid{ grid-template-columns:repeat(4,1fr) }
+  .stat-grid{ grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) }
   .sheet{ max-width:560px }
   #m-excel-preview .sheet{ max-width:760px }
 }
@@ -854,7 +861,7 @@ async function sendPasswordReset(email){
     <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">Add New User</div>
     <div class="fg"><label>Full Name</label><input id="nu-name" placeholder="Ahmad bin Ali"></div>
     <div class="fg"><label>Email Address</label><input id="nu-email" type="email" placeholder="ahmad@mnsb.com"></div>
-    <div class="fg"><label>Password</label><input id="nu-pass" type="password" placeholder="Minimum 6 aksara"></div>
+    <div class="fg"><label>Password</label><input id="nu-pass" type="password" placeholder="Minimum 6 characters"></div>
     <div class="fg"><label>Role</label>
       <select id="nu-role">
         <option value="technician">Technician</option>
@@ -878,7 +885,7 @@ async function sendPasswordReset(email){
 
 <div class="sync-bar" id="sync-bar">
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-  <span id="sync-msg">Cloud sync aktif</span>
+  <span id="sync-msg">Cloud sync active</span>
 </div>
 
 <div class="header">
@@ -888,14 +895,14 @@ async function sendPasswordReset(email){
     </div>
     <div>
       <div class="logo-name">SpareTrack</div>
-      <div class="logo-sub" id="last-update">Memuatkan...</div>
+      <div class="logo-sub" id="last-update">Loading...</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div id="user-badge" style="font-size:11px;padding:4px 10px;background:var(--blue-bg);color:var(--blue-text);border-radius:20px;font-weight:500;display:none;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
     <button class="add-btn" id="btn-tambah" onclick="openAdd()">
       <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Tambah
+      Add Part
     </button>
   </div>
 </div>
@@ -952,6 +959,8 @@ async function sendPasswordReset(email){
     </div>
     <button class="filter-btn" id="f-all" onclick="setFilter('all',this)">All</button>
     <button class="filter-btn" id="f-low" onclick="setFilter('low',this)">Low Stock</button>
+    <button class="filter-btn" id="f-near" onclick="setFilter('near',this)">Near Finish</button>
+    <button class="filter-btn" id="f-over" onclick="setFilter('over',this)">Over Stock</button>
   </div>
   <div id="parts-list"></div>
 </div>
@@ -967,7 +976,7 @@ async function sendPasswordReset(email){
 </div>
 
 <div id="alert" class="section">
-  <div class="sec-label">Low Stock Parts</div>
+  <div class="sec-label">Reorder Alerts · Low Stock &amp; Near Finish</div>
   <div id="alert-list"></div>
 </div>
 
@@ -980,11 +989,11 @@ async function sendPasswordReset(email){
     <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Filter Date Report</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Dari Date</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">From Date</div>
         <input type="date" id="filter-date-from" style="width:100%;padding:8px 10px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);font-size:13px;color:var(--text);font-family:inherit" onchange="updateFilterSummary()">
       </div>
       <div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Hingga Date</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">To Date</div>
         <input type="date" id="filter-date-to" style="width:100%;padding:8px 10px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);font-size:13px;color:var(--text);font-family:inherit" onchange="updateFilterSummary()">
       </div>
     </div>
@@ -1027,7 +1036,7 @@ async function sendPasswordReset(email){
 
   <div class="sec-label" style="margin-top:18px">☁️ Cloud Sync (Firebase)</div>
   <div id="firebase-status" style="font-size:13px;color:var(--text2);padding:12px;background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border)">
-    Belum dikonfigur. Masukkan Firebase config dalam fail HTML (cari <code>FIREBASE_CONFIG</code>).
+    Not configured. Add your Firebase config in the HTML file (search for <code>FIREBASE_CONFIG</code>).
   </div>
 </div>
 
@@ -1036,7 +1045,7 @@ async function sendPasswordReset(email){
   <div id="stk-idle">
     <div style="margin-bottom:16px">
       <div style="font-size:16px;font-weight:600;margin-bottom:4px">Stocktake</div>
-      <div style="font-size:13px;color:var(--text2)">Verify actual quantity vs system quantity untuk semua part.</div>
+      <div style="font-size:13px;color:var(--text2)">Verify actual quantity against system quantity for every part.</div>
     </div>
     <div class="stat-grid" id="stk-history-stats"></div>
     <button class="sub-btn" onclick="startStocktake()" style="margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
@@ -1044,16 +1053,16 @@ async function sendPasswordReset(email){
       Start New Stocktake
     </button>
     <div class="sec-label">Stocktake History</div>
-    <div id="stk-history-list"><div class="empty" style="padding:24px 0"><svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:1.5;opacity:.3;display:block;margin:0 auto 8px"><path d="M9 11l3 3L22 4"/></svg>Belum ada stocktake</div></div>
+    <div id="stk-history-list"><div class="empty" style="padding:24px 0"><svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:1.5;opacity:.3;display:block;margin:0 auto 8px"><path d="M9 11l3 3L22 4"/></svg>No stocktake yet</div></div>
   </div>
 
   <div id="stk-active" style="display:none">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div>
-        <div style="font-size:15px;font-weight:600" id="stk-session-title">Stocktake Berjalan</div>
+        <div style="font-size:15px;font-weight:600" id="stk-session-title">Stocktake in Progress</div>
         <div style="font-size:12px;color:var(--text2)" id="stk-progress-text"></div>
       </div>
-      <button class="act" onclick="cancelStocktake()" style="color:var(--red);border-color:var(--red-bg);font-size:12px">Batal</button>
+      <button class="act" onclick="cancelStocktake()" style="color:var(--red);border-color:var(--red-bg);font-size:12px">Cancel</button>
     </div>
 
     <!-- Progress bar -->
@@ -1080,7 +1089,7 @@ async function sendPasswordReset(email){
     <div id="stk-parts-list" style="margin-top:12px"></div>
 
     <button id="stk-finalize-btn" onclick="finalizeStocktake()" style="display:none;width:100%;padding:13px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;margin-top:16px;display:none">
-      Finalize &amp; Adjust Stok
+      Finalize &amp; Adjust Stock
     </button>
   </div>
 </div>
@@ -1123,7 +1132,7 @@ async function sendPasswordReset(email){
     <span id="m-part-title">Add Spare Part</span>
     <button class="close" aria-label="Close" onclick="closeM('m-part')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
-  <div class="fg"><label>Part Name *</label><input id="f-name" placeholder="Contoh: Bearing 6205"></div>
+  <div class="fg"><label>Part Name *</label><input id="f-name" placeholder="e.g. Bearing 6205"></div>
   <div class="fr">
     <div class="fg"><label>Part Code</label><input id="f-code" placeholder="BRG-6205"></div>
     <div class="fg"><label>Category</label><input id="f-cat" placeholder="Bearing"></div>
@@ -1137,12 +1146,12 @@ async function sendPasswordReset(email){
     <div class="fg"><label>Unit</label><select id="f-unit"><option>pcs</option><option>set</option><option>box</option><option>m</option><option>kg</option><option>liter</option><option>roll</option></select></div>
   </div>
   <div class="fr">
-    <div class="fg"><label>Storage Location</label><input id="f-loc" placeholder="Rak A-3"></div>
+    <div class="fg"><label>Storage Location</label><input id="f-loc" placeholder="e.g. Rack A-3"></div>
     <div class="fg"></div>
   </div>
   <div class="fr">
-    <div class="fg"><label>Supplier</label><input id="f-supplier" placeholder="Full Name pembekal"></div>
-    <div class="fg"><label>Lead Time</label><input id="f-leadtime" placeholder="Contoh: 2 minggu"></div>
+    <div class="fg"><label>Supplier</label><input id="f-supplier" placeholder="Supplier name"></div>
+    <div class="fg"><label>Lead Time</label><input id="f-leadtime" placeholder="e.g. 2 weeks"></div>
     <div class="fg"><label>Unit Cost (RM) <span style="font-size:10px;color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">— for Excel report only</span></label><input id="f-cost" type="number" step="0.01" min="0" placeholder="0.00"></div>
   </div>
   <input type="hidden" id="f-eid">
@@ -1155,7 +1164,7 @@ async function sendPasswordReset(email){
 <div class="overlay" id="m-txn">
 <div class="sheet">
   <div class="sheet-title">
-    <span id="m-txn-title">Rekod Transactions</span>
+    <span id="m-txn-title">Record Transaction</span>
     <button class="close" aria-label="Close" onclick="closeM('m-txn')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="fg"><label>Part</label><input id="t-pname" readonly></div>
@@ -1166,7 +1175,7 @@ async function sendPasswordReset(email){
     <div class="fg"><label>Quantity *</label><input id="t-qty" type="number" min="1" placeholder="1"></div>
     <div class="fg"><label>Date</label><input id="t-date" type="date"></div>
   </div>
-  <div class="fg"><label>Reason / Note</label><input id="t-note" placeholder="Contoh: Ganti mesin #3"></div>
+  <div class="fg"><label>Reason / Note</label><input id="t-note" placeholder="e.g. Replacement for machine #3"></div>
   <div class="fg"><label>Technician Name</label><input id="t-user" placeholder="Ali"></div>
   <input type="hidden" id="t-pid">
   <button class="sub-btn" onclick="saveTxn()">Submit</button>
@@ -1224,8 +1233,8 @@ async function sendPasswordReset(email){
     </table>
   </div>
   <div style="display:flex;gap:8px">
-    <button class="act" onclick="closeM('m-excel-preview')" style="flex:1;justify-content:center;padding:11px;font-size:13px">Batal</button>
-    <button class="sub-btn" onclick="confirmExcelImport()" style="flex:2;margin-top:0">Import <span id="excel-import-count"></span> Part</button>
+    <button class="act" onclick="closeM('m-excel-preview')" style="flex:1;justify-content:center;padding:11px;font-size:13px">Cancel</button>
+    <button class="sub-btn" onclick="confirmExcelImport()" style="flex:2;margin-top:0">Import <span id="excel-import-count"></span> Parts</button>
   </div>
 </div>
 </div>
@@ -1252,7 +1261,7 @@ async function sendPasswordReset(email){
     <label>Actual Qty (physical count) *</label>
     <input id="sv-actual" type="number" min="0" placeholder="0" oninput="updateVariance()" style="font-size:20px;font-weight:600;text-align:center">
   </div>
-  <div class="fg"><label>Notes (optional)</label><input id="sv-note" placeholder="Contoh: Rosak 2, balance 8"></div>
+  <div class="fg"><label>Notes (optional)</label><input id="sv-note" placeholder="e.g. 2 damaged, 8 good"></div>
   <input type="hidden" id="sv-part-id">
   <button class="sub-btn" onclick="submitVerify()">Verify &amp; Save</button>
 </div>
@@ -1271,7 +1280,7 @@ async function sendPasswordReset(email){
       <div style="width:65%;aspect-ratio:1;border:3px solid rgba(255,255,255,.8);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.45)"></div>
     </div>
   </div>
-  <div id="stk-scan-status" style="text-align:center;padding:14px 0 0;font-size:13px;color:var(--text2)">Scan QR code part untuk verify</div>
+  <div id="stk-scan-status" style="text-align:center;padding:14px 0 0;font-size:13px;color:var(--text2)">Scan the part QR code to verify</div>
 </div>
 </div>
 
@@ -1283,7 +1292,7 @@ async function sendPasswordReset(email){
     <button class="close" aria-label="Close" onclick="closeM('m-reject')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div id="reject-part-info" style="background:var(--bg2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:13px;color:var(--text2)"></div>
-  <div class="fg"><label>Sebab Reject *</label><input id="reject-reason" placeholder="Contoh: Insufficient stock, guna alternatif"></div>
+  <div class="fg"><label>Reject Reason *</label><input id="reject-reason" placeholder="e.g. Insufficient stock, use alternative"></div>
   <input type="hidden" id="reject-request-id">
   <button class="sub-btn" onclick="confirmReject()" style="background:var(--red);margin-top:4px">Confirm Reject</button>
 </div>
@@ -1293,7 +1302,7 @@ async function sendPasswordReset(email){
 <div class="overlay" id="m-img">
 <div class="sheet" style="text-align:center">
   <div class="sheet-title">
-    <span id="img-modal-title">Gambar Part</span>
+    <span id="img-modal-title">Part Image</span>
     <button class="close" aria-label="Close" onclick="closeM('m-img')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div id="img-preview-wrap" style="width:100%;border-radius:12px;overflow:hidden;background:var(--bg2);margin-bottom:14px;min-height:200px;display:flex;align-items:center;justify-content:center">
@@ -1332,10 +1341,10 @@ async function sendPasswordReset(email){
     </div>
     <div id="scan-line" style="position:absolute;left:17.5%;width:65%;height:2px;background:linear-gradient(90deg,transparent,#00D4FF,transparent);animation:scanline 2s linear infinite"></div>
     <div id="focus-ring" style="position:absolute;width:56px;height:56px;border:2px solid #00D4FF;border-radius:50%;pointer-events:none;display:none;transform:translate(-50%,-50%);box-shadow:0 0 10px rgba(0,212,255,0.5)"></div>
-    <div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:10px;color:rgba(255,255,255,0.4);pointer-events:none">Tap untuk focus</div>
+    <div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:10px;color:rgba(255,255,255,0.4);pointer-events:none">Tap to focus</div>
   </div>
   <style>@keyframes scanline{0%{top:17.5%}100%{top:82.5%}}</style>
-  <div id="scan-status" style="text-align:center;padding:14px 0 4px;font-size:13px;color:var(--text2)">Arahkan kamera ke QR code part</div>
+  <div id="scan-status" style="text-align:center;padding:14px 0 4px;font-size:13px;color:var(--text2)">Point the camera at the part QR code</div>
   <div id="scan-result" style="display:none;margin-top:12px;padding:14px;background:var(--green-bg);border-radius:var(--radius);border:0.5px solid var(--green)">
     <div style="font-weight:600;color:var(--green-text);margin-bottom:4px" id="scan-part-name"></div>
     <div style="font-size:12px;color:var(--green-text);margin-bottom:12px" id="scan-part-info"></div>
@@ -1384,6 +1393,34 @@ const FIREBASE_CONFIG = {
 // ═══════════════════════════════════════════
 
 let parts=[], transactions=[], filter='all', editId=null;
+
+// ── STOCK STATUS ─────────────────────────────
+// low  = out of stock (qty 0)
+// near = below min stock (near finish)
+// over = above max stock (only when max is set)
+// ok   = everything else
+const STOCK_STATUS={
+  low: {label:'Low Stock',   badge:'b-low'},
+  near:{label:'Near Finish', badge:'b-mid'},
+  over:{label:'Over Stock',  badge:'b-over'},
+  ok:  {label:'OK',          badge:'b-ok'}
+};
+function stockStatus(p){
+  const q=Number(p.qty)||0, mn=Number(p.min)||0, mx=Number(p.max)||0;
+  if(q<=0) return 'low';
+  if(q<mn) return 'near';
+  if(mx>0&&q>mx) return 'over';
+  return 'ok';
+}
+function stockLabel(p){return STOCK_STATUS[stockStatus(p)].label;}
+// Parts that need reordering (Low Stock + Near Finish), out-of-stock first
+function reorderParts(){
+  return parts.filter(p=>{const s=stockStatus(p);return s==='low'||s==='near';})
+    .sort((a,b)=>(stockStatus(a)==='low'?0:1)-(stockStatus(b)==='low'?0:1));
+}
+function filterParts(list){
+  return filter==='all'?list:list.filter(p=>stockStatus(p)===filter);
+}
 let db=null, useCloud=false;
 let currentUser=null;
 
@@ -1418,9 +1455,9 @@ async function initFirebase(){
           }
         }catch(e){currentUser={uid:user.uid,email:user.email,role:'technician',name:user.email};}
         showApp();
-        document.getElementById('firebase-status').innerHTML='<span style="color:var(--green-text)">✓ Firebase disambung. Data sync aktif.</span>';
+        document.getElementById('firebase-status').innerHTML='<span style="color:var(--green-text)">✓ Firebase connected. Data sync active.</span>';
         document.getElementById('sync-bar').classList.add('show');
-        document.getElementById('sync-msg').textContent='Cloud sync aktif - '+currentUser.name+' ('+currentUser.role+')';
+        document.getElementById('sync-msg').textContent='Cloud sync active - '+currentUser.name+' ('+currentUser.role+')';
         await loadFromCloud();
         listenCloud();
       } else {
@@ -1481,23 +1518,23 @@ function saveLocal(){try{localStorage.setItem('sp_parts',JSON.stringify(parts));
 
 function seed(){
   parts=[
-    {id:'1',name:'Bearing 6205',code:'BRG-6205',cat:'Bearing',qty:12,min:5,unit:'pcs',loc:'Rak A-1'},
-    {id:'2',name:'V-Belt A42',code:'VBT-A42',cat:'Belt',qty:3,min:5,unit:'pcs',loc:'Rak B-2'},
-    {id:'3',name:'Oil Seal 30x52',code:'OS-3052',cat:'Seal',qty:8,min:3,unit:'pcs',loc:'Rak A-3'},
-    {id:'4',name:'Fuse 10A',code:'FUS-10A',cat:'Elektrik',qty:2,min:10,unit:'pcs',loc:'Rak C-1'},
+    {id:'1',name:'Bearing 6205',code:'BRG-6205',cat:'Bearing',qty:12,min:5,unit:'pcs',loc:'Rack A-1'},
+    {id:'2',name:'V-Belt A42',code:'VBT-A42',cat:'Belt',qty:3,min:5,unit:'pcs',loc:'Rack B-2'},
+    {id:'3',name:'Oil Seal 30x52',code:'OS-3052',cat:'Seal',qty:8,min:3,unit:'pcs',loc:'Rack A-3'},
+    {id:'4',name:'Fuse 10A',code:'FUS-10A',cat:'Electrical',qty:2,min:10,unit:'pcs',loc:'Rack C-1'},
     {id:'5',name:'Hydraulic Oil 46',code:'HO-46',cat:'Lubricant',qty:15,min:5,unit:'liter',loc:'Store'},
   ];
   transactions=[
     {id:'t1',partId:'1',type:'in',qty:5,date:'2026-05-20',note:'Restock',user:'Ali',partName:'Bearing 6205',createdAt:Date.now()-3000},
-    {id:'t2',partId:'2',type:'out',qty:2,date:'2026-05-22',note:'Ganti mesin #2',user:'Abu',partName:'V-Belt A42',createdAt:Date.now()-2000},
-    {id:'t3',partId:'4',type:'out',qty:3,date:'2026-05-24',note:'Panel elektrik',user:'Ahmad',partName:'Fuse 10A',createdAt:Date.now()-1000},
+    {id:'t2',partId:'2',type:'out',qty:2,date:'2026-05-22',note:'Replacement for machine #2',user:'Abu',partName:'V-Belt A42',createdAt:Date.now()-2000},
+    {id:'t3',partId:'4',type:'out',qty:3,date:'2026-05-24',note:'Electrical panel',user:'Ahmad',partName:'Fuse 10A',createdAt:Date.now()-1000},
   ];
   saveLocal();
 }
 
 function refresh(){
   renderParts();renderTxn();renderAlerts();renderStats();
-  document.getElementById('last-update').textContent=useCloud?'Cloud sync ✓':'Kemaskini: '+new Date().toLocaleString('ms-MY',{dateStyle:'short',timeStyle:'short'});
+  document.getElementById('last-update').textContent=useCloud?'Cloud sync ✓':'Updated: '+new Date().toLocaleString('en-MY',{dateStyle:'short',timeStyle:'short'});
 }
 
 function tab(id,btn){
@@ -1509,7 +1546,7 @@ function tab(id,btn){
 
 function setFilter(f,btn){currentPage=1;
   filter=f;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#inv .filter-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   renderParts();
 }
@@ -1520,10 +1557,10 @@ const PAGE_SIZE = 20;
 function renderParts(){
   const q=(document.getElementById('s-inv').value||'').toLowerCase();
   let list=parts;
-  if(filter==='low') list=list.filter(p=>p.qty<=p.min);
+  list=filterParts(list);
   if(q) list=list.filter(p=>(p.name+p.code+p.cat+p.loc).toLowerCase().includes(q));
   const el=document.getElementById('parts-list');
-  if(!list.length){el.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Tiada part dijumpai</div>';return;}
+  if(!list.length){el.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>No parts found</div>';return;}
 
   // Pagination
   const totalPages = Math.ceil(list.length / PAGE_SIZE);
@@ -1532,11 +1569,11 @@ function renderParts(){
   const pageList = list.slice(start, start + PAGE_SIZE);
 
   const cards = pageList.map(p=>{
-    const low=p.qty<=p.min,mid=p.qty<=p.min*2&&!low;
-    const badge=low?'<span class="badge b-low">Low Stock</span>':mid?'<span class="badge b-mid">Hampir habis</span>':'<span class="badge b-ok">OK</span>';
+    const st=stockStatus(p),low=st==='low';
+    const badge=`<span class="badge ${STOCK_STATUS[st].badge}">${STOCK_STATUS[st].label}</span>`;
     const imgThumb = p.img ? `<img src="${p.img}" onclick="viewPartImage('${p.id}')" style="width:42px;height:42px;border-radius:8px;object-fit:cover;cursor:pointer;flex-shrink:0;border:0.5px solid var(--border)">` : (can('edit')?`<div onclick="viewPartImage('${p.id}')" style="width:42px;height:42px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;border:0.5px solid var(--border);font-size:18px">📷</div>`:'');
     const isViewOnly = !can('in') && !can('out') && !can('return');
-    return`<div class="part-card${low?' low':''}">
+    return`<div class="part-card${low?' low':st==='near'?' near':st==='over'?' over':''}">
       <div class="pt" style="gap:10px">
         ${imgThumb}
         <div style="flex:1;min-width:0"><div class="pname">${p.name}</div><div class="pcode">${p.code?'<span style="font-size:9px;font-weight:600;opacity:.45;text-transform:uppercase;margin-right:3px">Code</span>'+p.code:''}${p.cat?' <span style="opacity:.3;margin:0 2px">·</span><span style="font-size:9px;font-weight:600;opacity:.45;text-transform:uppercase;margin-right:3px">Cat</span>'+p.cat:''}${p.loc?' <span style="opacity:.3;margin:0 2px">·</span><span style="font-size:9px;font-weight:600;opacity:.45;text-transform:uppercase;margin-right:3px">Loc</span>'+p.loc:''}${(p.supplier||p.leadtime)?'<br>':''}${p.supplier?'<span style="font-size:9px;font-weight:600;opacity:.45;text-transform:uppercase;margin-right:3px">Supplier</span>'+p.supplier:''}${p.leadtime?(p.supplier?' <span style="opacity:.3;margin:0 2px">·</span>':'')+'<span style="font-size:9px;font-weight:600;opacity:.45;text-transform:uppercase;margin-right:3px">LT</span>'+p.leadtime:''}</div></div>${badge}
@@ -1571,7 +1608,7 @@ function renderParts(){
 function goPage(n){
   const q=(document.getElementById('s-inv').value||'').toLowerCase();
   let list=parts;
-  if(filter==='low') list=list.filter(p=>p.qty<=p.min);
+  list=filterParts(list);
   if(q) list=list.filter(p=>(p.name+p.code+p.cat+p.loc).toLowerCase().includes(q));
   const totalPages = Math.ceil(list.length / PAGE_SIZE);
   currentPage = Math.max(1, Math.min(n, totalPages));
@@ -1584,7 +1621,7 @@ function renderTxn(){
   let list=[...transactions].reverse();
   if(q) list=list.filter(t=>(t.partName+t.note+t.user+t.type).toLowerCase().includes(q));
   const el=document.getElementById('txn-list');
-  if(!list.length){el.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/></svg>Tiada transaksi lagi</div>';return;}
+  if(!list.length){el.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/></svg>No transactions yet</div>';return;}
   el.innerHTML=list.map(t=>{
     const isReturn=t.type==='return';
     const isIn=t.type==='in';
@@ -1605,19 +1642,19 @@ function renderTxn(){
 }
 
 function renderAlerts(){
-  const low=parts.filter(p=>p.qty<=p.min);
+  const low=reorderParts();
   const badge=document.getElementById('alert-badge');
   badge.textContent=low.length?` (${low.length})`:'';
   const el=document.getElementById('alert-list');
-  if(!low.length){el.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Semua stok mencukupi!</div>';return;}
-  el.innerHTML=low.map(p=>`<div class="alert-card">
+  if(!low.length){el.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>All stock levels are sufficient!</div>';return;}
+  el.innerHTML=low.map(p=>`<div class="alert-card${stockStatus(p)==='near'?' near':''}">
     <div class="alert-ic"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
     <div>
-      <div class="alert-part">${p.name}</div>
-      <div class="alert-info">Stock: ${p.qty} ${p.unit} - Min: ${p.min} ${p.unit}<br>Kod: ${p.code||'-'} · Rak: ${p.loc||'-'}</div>
+      <div class="alert-part">${p.name} <span class="badge ${STOCK_STATUS[stockStatus(p)].badge}" style="margin-left:6px;vertical-align:1px">${stockLabel(p)}</span></div>
+      <div class="alert-info">Stock: ${p.qty} ${p.unit} - Min: ${p.min} ${p.unit}<br>Code: ${p.code||'-'} · Rack: ${p.loc||'-'}</div>
     </div>
   </div>`).join('');
-  setTimeout(()=>sendLowStockNtfy(parts.filter(p=>p.qty<=p.min)),3000);
+  setTimeout(()=>sendLowStockNtfy(reorderParts()),3000);
 }
 
 function sendLowStockNtfy(lowParts){
@@ -1625,7 +1662,7 @@ function sendLowStockNtfy(lowParts){
   const today=new Date().toISOString().slice(0,10);
   const lastSent=localStorage.getItem('sp_ntfy_alert_date');
   if(lastSent===today) return;
-  const currentLow=parts.filter(p=>p.qty<=p.min);
+  const currentLow=reorderParts();
   const finalLow=currentLow.length>=lowParts.length?currentLow:lowParts;
   lowParts=finalLow;
   if(!lowParts.length) return;
@@ -1633,10 +1670,11 @@ function sendLowStockNtfy(lowParts){
   const shown=lowParts.slice(0,maxShow);
   const extra=lowParts.length-maxShow;
   const partLines=shown.map((p,i)=>
-    (i+1)+'. '+p.name+'\n   Kod: '+(p.code||'-')+' | Rak: '+(p.loc||'-')+'\n   Stok: '+p.qty+' '+p.unit+' | Min: '+p.min+' '+p.unit
+    (i+1)+'. ['+stockLabel(p).toUpperCase()+'] '+p.name+'\n   Code: '+(p.code||'-')+' | Rack: '+(p.loc||'-')+'\n   Stock: '+p.qty+' '+p.unit+' | Min: '+p.min+' '+p.unit
   ).join('\n\n');
-  const extraLine=extra>0?'\n\n[+'+extra+' parts lagi]':'';
-  const msg=lowParts.length+' parts di bawah minimum stok\n-------------------------\n\n'+partLines+extraLine+'\n\n-> Buka SpareTrack untuk reorder';
+  const extraLine=extra>0?'\n\n[+'+extra+' more parts]':'';
+  const nLow=lowParts.filter(p=>stockStatus(p)==='low').length;
+  const msg=lowParts.length+' parts need reorder ('+nLow+' out of stock, '+(lowParts.length-nLow)+' below min stock)\n-------------------------\n\n'+partLines+extraLine+'\n\n-> Open SpareTrack to reorder';
   fetch('https://ntfy.sh/mnsb_sparepart',{
     method:'POST',mode:'no-cors',
     headers:{'Title':'LOW STOCK ALERT - SpareTrack','Priority':'high','Tags':'warning,red_circle','Content-Type':'text/plain'},
@@ -1650,9 +1688,11 @@ function renderStats(){
   const totalOut=transactions.filter(t=>t.type==='out').reduce((a,t)=>a+t.qty,0);
   document.getElementById('stat-grid').innerHTML=`
     <div class="stat"><div class="slabel">Total Parts</div><div class="sval">${parts.length}</div></div>
-    <div class="stat"><div class="slabel">Low Stock</div><div class="sval red">${parts.filter(p=>p.qty<=p.min).length}</div></div>
+    <div class="stat"><div class="slabel">Low Stock</div><div class="sval red">${parts.filter(p=>stockStatus(p)==='low').length}</div></div>
+    <div class="stat"><div class="slabel">Near Finish</div><div class="sval amber">${parts.filter(p=>stockStatus(p)==='near').length}</div></div>
+    <div class="stat"><div class="slabel">Over Stock</div><div class="sval indigo">${parts.filter(p=>stockStatus(p)==='over').length}</div></div>
     <div class="stat"><div class="slabel">Total IN</div><div class="sval green">${totalIn}</div></div>
-    <div class="stat"><div class="slabel">Total OUT</div><div class="sval amber">${totalOut}</div></div>`;
+    <div class="stat"><div class="slabel">Total OUT</div><div class="sval">${totalOut}</div></div>`;
 }
 
 function openAdd(){
@@ -1685,7 +1725,7 @@ function openEdit(id){
 
 async function savePart(){
   const name=document.getElementById('f-name').value.trim();
-  if(!name){toast('Full Name part diperlukan!');return;}
+  if(!name){toast('Part name is required!');return;}
   const data={
     name, code:document.getElementById('f-code').value.trim(),
     cat:document.getElementById('f-cat').value.trim(),
@@ -1720,10 +1760,10 @@ async function deletePart(){
 function openTxn(pid,type){
   const p=parts.find(x=>x.id==pid);if(!p)return;
   document.getElementById('t-pid').value=pid;
-  document.getElementById('t-pname').value=p.name+' (stok: '+p.qty+' '+p.unit+')';
+  document.getElementById('t-pname').value=p.name+' (stock: '+p.qty+' '+p.unit+')';
   document.getElementById('t-type').value=type;
   document.getElementById('t-qty').value='';
-  document.getElementById('t-note').value=type==='return'?'Barang dipulangkan oleh technician':'';
+  document.getElementById('t-note').value=type==='return'?'Item returned by technician':'';
   document.getElementById('t-user').value=currentUser?currentUser.name||'':'';
   document.getElementById('t-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('m-txn').classList.add('open');
@@ -1735,8 +1775,8 @@ async function saveTxn(){
   const qty=parseInt(document.getElementById('t-qty').value)||0;
   if(!qty||qty<1){toast('Please enter quantity!');return;}
   const p=parts.find(x=>x.id==pid);
-  if(!p){toast('Part tidak dijumpai!');return;}
-  if(type==='out'&&p.qty<qty){toast('Insufficient stock! (Ada: '+p.qty+' '+p.unit+')');return;}
+  if(!p){toast('Part not found!');return;}
+  if(type==='out'&&p.qty<qty){toast('Insufficient stock! (Available: '+p.qty+' '+p.unit+')');return;}
 
   const note=document.getElementById('t-note').value.trim();
   const user=document.getElementById('t-user').value.trim()||(currentUser?currentUser.name||currentUser.email:'');
@@ -1746,7 +1786,7 @@ async function saveTxn(){
   // Loading state
   const btn=document.querySelector('#m-txn .sub-btn');
   const origText=btn?btn.textContent:'';
-  if(btn){btn.textContent='Menyimpan...';btn.disabled=true;}
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
 
   try{
     // ── Pending approval flow ───────────────────────────────
@@ -1780,10 +1820,10 @@ async function saveTxn(){
       fetch('https://ntfy.sh/mnsb_sparepart',{
         method:'POST', mode:'no-cors',
         headers:{'Title':'Request '+typeLabel+' Sparepart','Priority':'high','Tags':ntfyTags,'Content-Type':'text/plain'},
-        body:'[REQUEST '+typeLabel+'] '+p.name+'\nKuantiti: '+qty+' '+p.unit+'\nDiminta: '+user+(currentUser&&currentUser.role?' ('+currentUser.role+')':'')+'\nNota: '+(note||'-')+'\nDate: '+date+'\n\n→ Sila approve/reject dalam SpareTrack'
+        body:'[REQUEST '+typeLabel+'] '+p.name+'\nQuantity: '+qty+' '+p.unit+'\nRequested by: '+user+(currentUser&&currentUser.role?' ('+currentUser.role+')':'')+'\nNote: '+(note||'-')+'\nDate: '+date+'\n\n→ Please approve/reject in SpareTrack'
       }).catch(()=>{});
       closeM('m-txn');
-      toast('Request '+typeLabel+' dihantar - pending approval ✓');
+      toast('Request '+typeLabel+' submitted - pending approval ✓');
       return;
     }
 
@@ -1806,16 +1846,16 @@ async function saveTxn(){
       refresh();
     }
     closeM('m-txn');
-    if(type==='return') toast('+'+qty+' returned - stok: '+newQty+' ✓');
-    else if(type==='in') toast('+'+qty+' masuk - stok: '+newQty+' ✓');
-    else toast('-'+qty+' keluar - stok: '+newQty+' ✓');
+    if(type==='return') toast('+'+qty+' returned - stock: '+newQty+' ✓');
+    else if(type==='in') toast('+'+qty+' in - stock: '+newQty+' ✓');
+    else toast('-'+qty+' out - stock: '+newQty+' ✓');
 
   } catch(err){
     console.error('saveTxn error:',err);
-    let msg = err.message||'Cuba sekali lagi';
-    if(msg.includes('permission')||msg.includes('PERMISSION')) msg='Firebase permission denied. Semak Firestore Rules.';
-    if(msg.includes('offline')||msg.includes('unavailable')) msg='Tiada internet. Data akan sync bila online.';
-    toast('Ralat: '+msg);
+    let msg = err.message||'Please try again';
+    if(msg.includes('permission')||msg.includes('PERMISSION')) msg='Firebase permission denied. Check Firestore Rules.';
+    if(msg.includes('offline')||msg.includes('unavailable')) msg='No internet. Data will sync when back online.';
+    toast('Error: '+msg);
   } finally {
     // Always restore button state
     if(btn){btn.textContent=origText;btn.disabled=false;}
@@ -1834,7 +1874,7 @@ function toast(msg){
 // ── EXCEL IMPORT ─────────────────────────────────────────────
 let excelImportData = [];
 
-// Column mapping dari Excel header ko → SpareTrack fields
+// Column mapping from Excel header → SpareTrack fields
 const COL_MAP = {
   name:     ['nama part','name','part name','description','desc','item','item name','sparepart'],
   code:     ['kod part','code','part code','part no','part number','item code','item no'],
@@ -1859,7 +1899,7 @@ function findCol(headers, field){
 }
 
 function importExcel(input){
-  if(typeof XLSX === 'undefined'){toast('XLSX library belum load');return;}
+  if(typeof XLSX === 'undefined'){toast('XLSX library not loaded yet');return;}
   const file = input.files[0]; if(!file) return;
   const reader = new FileReader();
   reader.onload = e => {
@@ -1867,7 +1907,7 @@ function importExcel(input){
       const wb = XLSX.read(e.target.result, {type:'binary'});
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-      if(rows.length < 2){toast('Excel kosong atau takde data');return;}
+      if(rows.length < 2){toast('Excel file is empty or has no data');return;}
 
       // Detect header row (first row with most non-empty cells)
       const headers = rows[0].map(h => (h||'').toString().trim());
@@ -1902,14 +1942,14 @@ function importExcel(input){
 
       // Show column mapping info
       const mapped = Object.entries(colIdx).filter(([k,v])=>v>=0).map(([k,v])=>`<b>${k}</b> → kolum "${headers[v]}"`);
-      const unmapped = Object.entries(colIdx).filter(([k,v])=>v<0).map(([k])=>`<span style="color:var(--amber-text)">${k} (tidak jumpa)</span>`);
+      const unmapped = Object.entries(colIdx).filter(([k,v])=>v<0).map(([k])=>`<span style="color:var(--amber-text)">${k} (not found)</span>`);
       document.getElementById('excel-col-map').innerHTML =
         '<b>Column mapping:</b><br>' + [...mapped,...unmapped].join(' &nbsp;|&nbsp; ');
 
       // Show preview table (first 10 rows)
       const preview = excelImportData.slice(0,10);
       document.getElementById('excel-preview-head').innerHTML =
-        '<tr>' + ['Full Name Part','Kod','Category','Location','Unit','Stok','Min','Max','Supplier','Lead Time'].map(h=>
+        '<tr>' + ['Part Name','Code','Category','Location','Unit','Stock','Min','Max','Supplier','Lead Time'].map(h=>
           `<th style="padding:8px 10px;text-align:left;font-weight:600;border-bottom:0.5px solid var(--border);white-space:nowrap">${h}</th>`
         ).join('') + '</tr>';
       document.getElementById('excel-preview-body').innerHTML = preview.map(p=>
@@ -1929,13 +1969,13 @@ function importExcel(input){
 
       const total = excelImportData.length;
       document.getElementById('excel-preview-count').textContent =
-        `Jumpa ${total} part. Preview 10 pertama di bawah:`;
+        `Found ${total} parts. Preview of the first 10 below:`;
       document.getElementById('excel-import-count').textContent = total;
       document.getElementById('excel-preview-title').textContent =
         `Preview Import - ${file.name}`;
       document.getElementById('m-excel-preview').classList.add('open');
     }catch(err){
-      toast('Gagal baca Excel: '+err.message);
+      toast('Failed to read Excel: '+err.message);
       console.error(err);
     }
     input.value='';
@@ -2049,22 +2089,22 @@ async function confirmExcelImport(){
 }
 
 function exportExcel(){
-  if(typeof XLSX === 'undefined'){toast('XLSX library belum load, cuba sekali lagi');return;}
+  if(typeof XLSX === 'undefined'){toast('XLSX library not loaded yet, please try again');return;}
   const wb = XLSX.utils.book_new();
   const d = new Date().toISOString().slice(0,10);
 
   // ── Sheet 1: Inventory Summary ──────────────────────────────
-  const genTime=new Date().toLocaleString('ms-MY',{dateStyle:'short',timeStyle:'short'});
+  const genTime=new Date().toLocaleString('en-MY',{dateStyle:'short',timeStyle:'short'});
   // Date range selected by user
   const _df = document.getElementById('filter-date-from')?.value || '';
   const _dt = document.getElementById('filter-date-to')?.value || '';
-  const dateRangeStr = (_df || _dt) ? ('Date Range: ' + (_df||'Awal') + ' hingga ' + (_dt||'Sekarang')) : 'Date Range: Semua data';
-  const invHeader = [['SpareTrack - Inventory Summary'],['Date export: '+d+' | Digenerate: '+genTime],[dateRangeStr],[]];
-  const invCols = [['Full Name Part','Part Code','Category','Location','Unit','Min Stock','Max Stock','Current Stock','Status','Supplier','Lead Time','Unit Cost (RM)','Total Cost (RM)']];
+  const dateRangeStr = (_df || _dt) ? ('Date Range: ' + (_df||'Start') + ' to ' + (_dt||'Now')) : 'Date Range: All data';
+  const invHeader = [['SpareTrack - Inventory Summary'],['Export date: '+d+' | Generated: '+genTime],[dateRangeStr],[]];
+  const invCols = [['Part Name','Part Code','Category','Location','Unit','Min Stock','Max Stock','Current Stock','Status','Supplier','Lead Time','Unit Cost (RM)','Total Cost (RM)']];
   const invRows = parts.map(p => [
     p.name, p.code||'', p.cat||'', p.loc||'', p.unit,
     p.min||0, p.max||'', p.qty,
-    p.qty <= p.min ? 'LOW STOCK' : p.qty <= p.min*2 ? 'NEAR LOW' : 'OK',
+    stockLabel(p).toUpperCase(),
     p.supplier||'', p.leadtime||'',
     p.cost||'',
     p.cost ? Math.round(p.cost * p.qty * 100) / 100 : ''
@@ -2089,8 +2129,8 @@ function exportExcel(){
   XLSX.utils.book_append_sheet(wb, ws1, 'Inventory Summary');
 
   // ── Sheet 2: Transaction History + Running Balance ───────────
-  const txnHeader = [['SpareTrack - Transaction History & Running Balance'],['Date export: '+d+' | Digenerate: '+genTime],[dateRangeStr],[]];
-  const txnCols = [['Date','Part','Part Code','Category','Type','Kuantiti','Baki Selepas','Nota','Technician']];
+  const txnHeader = [['SpareTrack - Transaction History & Running Balance'],['Export date: '+d+' | Generated: '+genTime],[dateRangeStr],[]];
+  const txnCols = [['Date','Part','Part Code','Category','Type','Quantity','Balance After','Note','Technician']];
 
   // Build running balance per part
   const balanceMap = {};
@@ -2134,14 +2174,14 @@ function exportExcel(){
   XLSX.utils.book_append_sheet(wb, ws2, 'Transaction History');
 
   // ── Sheet 3: Balance per Part ────────────────────────────────
-  const balHeader = [['SpareTrack - Balance Per Part'],['Date export: '+d+' | Digenerate: '+genTime],[dateRangeStr],[]];
-  const balCols = [['Full Name Part','Kod','Category','Location','Unit','Opening Stock','Total IN','Total OUT','Current Stock','Min Stock','Status','Unit Cost (RM)','Total Cost (RM)']];
+  const balHeader = [['SpareTrack - Balance Per Part'],['Export date: '+d+' | Generated: '+genTime],[dateRangeStr],[]];
+  const balCols = [['Part Name','Code','Category','Location','Unit','Opening Stock','Total IN','Total OUT','Current Stock','Min Stock','Status','Unit Cost (RM)','Total Cost (RM)']];
   const balRows = parts.map(p => {
     const ptxn = transactions.filter(t => t.partId == p.id);
     const totalIn = ptxn.filter(t=>t.type==='in'||t.type==='return').reduce((a,t)=>a+t.qty,0);
     const totalOut = ptxn.filter(t=>t.type==='out').reduce((a,t)=>a+t.qty,0);
     const opening = balanceMap[p.id] ? balanceMap[p.id].opening : p.qty;
-    const status = p.qty <= p.min ? 'LOW STOCK' : p.qty <= p.min*2 ? 'HAMPIR HABIS' : 'OK';
+    const status = stockLabel(p).toUpperCase();
     return [p.name, p.code||'', p.cat||'', p.loc||'', p.unit, opening, totalIn, totalOut, p.qty, p.min||0, status, p.cost||'', p.cost ? Math.round(p.cost*p.qty*100)/100 : ''];
   });
   const ws3 = XLSX.utils.aoa_to_sheet([...balHeader, ...balCols, ...balRows]);
@@ -2152,17 +2192,17 @@ function exportExcel(){
   XLSX.utils.book_append_sheet(wb, ws3, 'Balance Per Part');
 
   XLSX.writeFile(wb, 'SpareTrack_Report_'+d+'.xlsx');
-  toast('Excel export berjaya ✓');
+  toast('Excel exported ✓');
 }
 
 function exportCSV(type){
   let csv='',fn='';
   const d=new Date().toISOString().slice(0,10);
   if(type==='parts'){
-    csv='Full Name,Kod,Category,Stok,Min Stok,Unit,Location\n'+parts.map(p=>`"${p.name}","${p.code||''}","${p.cat||''}",${p.qty},${p.min},"${p.unit}","${p.loc||''}"`).join('\n');
+    csv='Part Name,Code,Category,Stock,Min Stock,Max Stock,Status,Unit,Location\n'+parts.map(p=>`"${p.name}","${p.code||''}","${p.cat||''}",${p.qty},${p.min},${p.max||''},"${stockLabel(p)}","${p.unit}","${p.loc||''}"`).join('\n');
     fn='sparetrack_inventory_'+d+'.csv';
   } else {
-    csv='Date,Part,Type,Kuantiti,Nota,Technician\n'+transactions.map(t=>`${t.date},"${t.partName}","${t.type.toUpperCase()}",${t.qty},"${t.note||''}","${t.user||''}"`).join('\n');
+    csv='Date,Part,Type,Quantity,Note,Technician\n'+transactions.map(t=>`${t.date},"${t.partName}","${t.type.toUpperCase()}",${t.qty},"${t.note||''}","${t.user||''}"`).join('\n');
     fn='sparetrack_transaksi_'+d+'.csv';
   }
   dl(new Blob([csv],{type:'text/csv'}),fn);
@@ -2184,7 +2224,7 @@ function importData(input){
       if(data.parts)parts=data.parts;
       if(data.transactions)transactions=data.transactions;
       saveLocal();refresh();toast('Import successful ✓');
-    }catch(e){toast('File tidak valid!');}
+    }catch(e){toast('Invalid file!');}
     input.value='';
   };
   r.readAsText(file);
@@ -2245,7 +2285,7 @@ function printQR(){
   <div class="label">
     <img src="${src}">
     <div class="name">${p.name}</div>
-    <div class="detail">${p.code||''} · ${p.cat||''}<br>Location: ${p.loc||'-'}<br>Unit: ${p.unit} · Min stok: ${p.min}</div>
+    <div class="detail">${p.code||''} · ${p.cat||''}<br>Location: ${p.loc||'-'}<br>Unit: ${p.unit} · Min stock: ${p.min}</div>
   </div>
   <br><button onclick="window.print()" style="margin-top:16px;padding:10px 24px;font-size:14px;cursor:pointer">Print</button>
   <script>setTimeout(()=>window.print(),500)<\/script>
@@ -2258,7 +2298,7 @@ let scanStream=null, scanInterval=null, scannedPartId=null;
 function openScanner(){
   document.getElementById('m-scan').classList.add('open');
   document.getElementById('scan-result').style.display='none';
-  document.getElementById('scan-status').textContent='Arahkan kamera ke QR code part';
+  document.getElementById('scan-status').textContent='Point the camera at the part QR code';
   scannedPartId=null;
   if(document.getElementById('scan-qty')) document.getElementById('scan-qty').value='1';
   if(document.getElementById('scan-cost')) document.getElementById('scan-cost').value='';
@@ -2281,7 +2321,7 @@ async function startCamera(){
     else if(zsl) zsl.style.opacity='0.3';
     scanInterval=setInterval(scanFrame,150);
   }catch(e){
-    document.getElementById('scan-status').textContent='Kamera tidak dapat diakses. Pastikan bagi permission.';
+    document.getElementById('scan-status').textContent='Camera not accessible. Please allow camera permission.';
   }
 }
 
@@ -2309,18 +2349,18 @@ function handleScan(data){
       p=parts.find(x=>x.id==pid);
     } else {
       const obj=JSON.parse(data);
-      if(obj.app!=='sparetrack') throw new Error('bukan SpareTrack QR');
+      if(obj.app!=='sparetrack') throw new Error('not a SpareTrack QR');
       p=parts.find(x=>x.id==obj.id)||parts.find(x=>x.code==obj.code&&x.code);
     }
-    if(!p) throw new Error('part tidak dijumpai');
+    if(!p) throw new Error('part not found');
     scannedPartId=p.id;
-    document.getElementById('scan-status').textContent='✓ Part dijumpai!';
+    document.getElementById('scan-status').textContent='✓ Part found!';
     document.getElementById('scan-part-name').textContent=p.name;
     document.getElementById('scan-part-info').textContent=
-      `${p.code||'-'} · ${p.cat||'-'} · Stok semasa: ${p.qty} ${p.unit}`;
+      `${p.code||'-'} · ${p.cat||'-'} · Current stock: ${p.qty} ${p.unit}`;
     document.getElementById('scan-result').style.display='block';
   }catch(e){
-    document.getElementById('scan-status').textContent='QR tidak dikenali. Cuba lagi...';
+    document.getElementById('scan-status').textContent='QR not recognised. Try again...';
     setTimeout(()=>{ scanInterval=setInterval(scanFrame,250); },1500);
   }
 }
@@ -2332,7 +2372,7 @@ function scanQuickTxn(type){
   const note = document.getElementById('scan-note')?.value.trim()||'';
   const p = parts.find(x=>x.id==scannedPartId);
   if(!p) return;
-  if(type==='out' && p.qty < qty){ toast('Stok tidak mencukupi! (Ada: '+p.qty+' '+p.unit+')'); return; }
+  if(type==='out' && p.qty < qty){ toast('Insufficient stock! (Available: '+p.qty+' '+p.unit+')'); return; }
   closeScanner();
   // Pre-fill transaction modal with scanned data
   openTxn(scannedPartId, type);
@@ -2352,7 +2392,7 @@ async function toggleTorch(){
     await track.applyConstraints({advanced:[{torch:torchOn}]});
     const btn=document.getElementById('torch-btn');
     if(btn){btn.style.background=torchOn?'rgba(255,193,7,0.15)':'';btn.style.color=torchOn?'#FFC107':'';}
-  }catch(e){toast('Torch tidak tersedia');torchOn=false;}
+  }catch(e){toast('Torch not available');torchOn=false;}
 }
 function setZoom(val){
   if(!scanStream) return;
@@ -2404,7 +2444,7 @@ function showInstallBanner(){
   const banner=document.createElement('div');
   banner.id='install-banner';
   banner.style.cssText='position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#185FA5;color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;z-index:500;gap:12px;box-shadow:0 -4px 24px rgba(0,0,0,.15)';
-  banner.innerHTML=`<div style="font-size:13px;line-height:1.4"><b style="font-size:14px;display:block;margin-bottom:2px">Install SpareTrack</b>Guna macam real app kat phone</div><div style="display:flex;gap:8px;flex-shrink:0"><button onclick="dismissBanner()" style="padding:7px 12px;background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer">Nanti</button><button onclick="installApp()" style="padding:7px 14px;background:#fff;border:none;border-radius:8px;color:#185FA5;font-size:12px;font-weight:600;cursor:pointer">Install ↓</button></div>`;
+  banner.innerHTML=`<div style="font-size:13px;line-height:1.4"><b style="font-size:14px;display:block;margin-bottom:2px">Install SpareTrack</b>Use it like a real app on your phone</div><div style="display:flex;gap:8px;flex-shrink:0"><button onclick="dismissBanner()" style="padding:7px 12px;background:rgba(255,255,255,.2);border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer">Later</button><button onclick="installApp()" style="padding:7px 14px;background:#fff;border:none;border-radius:8px;color:#185FA5;font-size:12px;font-weight:600;cursor:pointer">Install ↓</button></div>`;
   document.body.appendChild(banner);
 }
 
@@ -2420,13 +2460,13 @@ function dismissBanner(){
   safeSet('pwa-dismissed','1');
 }
 
-// iOS Safari - tunjuk arahan manual
+// iOS Safari - show manual install steps
 const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone;
 if(isIOS&&!safeGet('pwa-dismissed')){
   setTimeout(()=>{
     const banner=document.createElement('div');
     banner.style.cssText='position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:#1a1a18;color:#f0ede6;padding:16px 18px;z-index:500;border-radius:16px 16px 0 0;font-size:13px;line-height:1.7;box-shadow:0 -4px 24px rgba(0,0,0,.3)';
-    banner.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">Install SpareTrack kat iPhone</b><button onclick="this.parentElement.parentElement.remove();localStorage.setItem('pwa-dismissed','1')" style="background:none;border:none;color:#9a9a95;font-size:22px;cursor:pointer;line-height:1">×</button></div><div>1. Tekan butang <b>Share</b> ⎙ kat toolbar Safari</div><div>2. Scroll bawah, pilih <b>"Add to Home Screen"</b></div><div>3. Tekan <b>Add</b> - siap! App icon akan keluar ✓</div>`;
+    banner.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">Install SpareTrack on iPhone</b><button onclick="this.parentElement.parentElement.remove();localStorage.setItem('pwa-dismissed','1')" style="background:none;border:none;color:#9a9a95;font-size:22px;cursor:pointer;line-height:1">×</button></div><div>1. Tap the <b>Share</b> ⎙ button in the Safari toolbar</div><div>2. Scroll down and choose <b>"Add to Home Screen"</b></div><div>3. Tap <b>Add</b> - done! The app icon will appear ✓</div>`;
     document.body.appendChild(banner);
   },1500);
 }
@@ -2455,7 +2495,7 @@ function startStocktake(){
 }
 
 function cancelStocktake(){
-  if(!confirm('Batal stocktake? Progress hilang.'))return;
+  if(!confirm('Cancel stocktake? All progress will be lost.'))return;
   stkSession=null;
   document.getElementById('stk-idle').style.display='block';
   document.getElementById('stk-active').style.display='none';
@@ -2467,10 +2507,10 @@ function updateStkProgress(){
   const diff=stkSession.items.filter(i=>i.verified&&i.variance!==0).length;
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('stk-progress-bar').style.width=pct+'%';
-  document.getElementById('stk-progress-text').textContent=`${done}/${total} diverify (${pct}%) · ${diff} ada variance`;
+  document.getElementById('stk-progress-text').textContent=`${done}/${total} verified (${pct}%) · ${diff} with variance`;
   const btn=document.getElementById('stk-finalize-btn');
   btn.style.display=done>0?'block':'none';
-  if(done>0) btn.textContent=done===total?`Finalize & Adjust Stok (${diff} variance)`:`Finalize Sekarang (${done}/${total} verified, ${total-done} belum)`;
+  if(done>0) btn.textContent=done===total?`Finalize & Adjust Stock (${diff} variance)`:`Finalize Now (${done}/${total} verified, ${total-done} pending)`;
 }
 
 function setStkFilter(f,btn){
@@ -2487,10 +2527,10 @@ function renderStkList(){
   if(stkFilter==='diff') items=items.filter(i=>i.verified&&i.variance!==0);
   if(q) items=items.filter(i=>(i.partName+i.partCode+i.partCat+i.partLoc).toLowerCase().includes(q));
   const el=document.getElementById('stk-parts-list');
-  if(!items.length){el.innerHTML='<div class="empty" style="padding:24px 0">Tiada part</div>';return;}
+  if(!items.length){el.innerHTML='<div class="empty" style="padding:24px 0">No parts</div>';return;}
   el.innerHTML=items.map(item=>{
     const vc=item.variance===null?'var(--text3)':item.variance===0?'var(--green-text)':item.variance>0?'var(--blue)':'var(--red-text)';
-    const vl=item.variance===null?'Belum':item.variance===0?'Match':item.variance>0?'+'+item.variance:item.variance;
+    const vl=item.variance===null?'Pending':item.variance===0?'Match':item.variance>0?'+'+item.variance:item.variance;
     const bg=!item.verified?'var(--bg)':item.variance===0?'var(--green-bg)':'var(--amber-bg)';
     return`<div style="background:${bg};border:0.5px solid var(--border);border-radius:var(--radius);padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openVerify('${item.partId}')">
       <div style="flex:1;min-width:0">
@@ -2539,14 +2579,14 @@ function submitVerify(){
   item.note=document.getElementById('sv-note').value.trim(); item.verified=true;
   closeM('m-stk-verify'); updateStkProgress(); renderStkList();
   const v=item.variance;
-  toast(v===0?`Match! Stok ${actual} betul ✓`:v>0?`+${v} lebih dari sistem`:`${v} kurang dari sistem`);
+  toast(v===0?`Match! Stock ${actual} is correct ✓`:v>0?`+${v} more than system`:`${v} less than system`);
 }
 
 async function finalizeStocktake(){
   const verified=stkSession.items.filter(i=>i.verified);
   const withDiff=verified.filter(i=>i.variance!==0);
   const unverified=stkSession.items.filter(i=>!i.verified).length;
-  if(!confirm(`Finalize stocktake?\n\n${verified.length} diverify · ${withDiff.length} variance · ${unverified} belum verify\n\nStok ${withDiff.length} part akan di-adjust.`))return;
+  if(!confirm(`Finalize stocktake?\n\n${verified.length} verified · ${withDiff.length} variance · ${unverified} not verified\n\nStock for ${withDiff.length} part(s) will be adjusted.`))return;
 
   for(const item of withDiff){
     const p=parts.find(x=>x.id==item.partId);if(!p)continue;
@@ -2567,13 +2607,13 @@ async function finalizeStocktake(){
   stkSession=null;
   document.getElementById('stk-idle').style.display='block';
   document.getElementById('stk-active').style.display='none';
-  renderStkHistory(); toast(`Stocktake selesai! ${withDiff.length} part adjusted ✓`);
+  renderStkHistory(); toast(`Stocktake complete! ${withDiff.length} part(s) adjusted ✓`);
   exportStkReport(record);
 }
 
 function renderStkHistory(){
   const el=document.getElementById('stk-history-list');
-  if(!stocktakeHistory.length){el.innerHTML='<div class="empty" style="padding:24px 0"><svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:1.5;opacity:.3;display:block;margin:0 auto 8px"><path d="M9 11l3 3L22 4"/></svg>Belum ada stocktake</div>';return;}
+  if(!stocktakeHistory.length){el.innerHTML='<div class="empty" style="padding:24px 0"><svg viewBox="0 0 24 24" style="width:32px;height:32px;stroke:currentColor;fill:none;stroke-width:1.5;opacity:.3;display:block;margin:0 auto 8px"><path d="M9 11l3 3L22 4"/></svg>No stocktake yet</div>';return;}
   el.innerHTML=stocktakeHistory.slice(0,10).map(r=>`
     <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;cursor:pointer" onclick="exportStkReport(stocktakeHistory.find(x=>x.id==='${r.id}'))">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -2590,10 +2630,10 @@ function renderStkHistory(){
 function exportStkReport(record){
   if(!record||typeof XLSX==='undefined')return;
   const wb=XLSX.utils.book_new();
-  const ws1=XLSX.utils.aoa_to_sheet([['SpareTrack - Laporan Stocktake'],['Date:',record.date],['Total Part:',record.totalParts],['Diverify:',record.verified],['Match:',record.matched],['Variance:',record.variances],['Belum Verify:',record.unverified]]);
+  const ws1=XLSX.utils.aoa_to_sheet([['SpareTrack - Stocktake Report'],['Date:',record.date],['Total Parts:',record.totalParts],['Verified:',record.verified],['Match:',record.matched],['Variance:',record.variances],['Not Verified:',record.unverified]]);
   ws1['!cols']=[{wch:16},{wch:20}];
   XLSX.utils.book_append_sheet(wb,ws1,'Summary');
-  const ws2=XLSX.utils.aoa_to_sheet([['Full Name Part','Kod','Category','Location','Unit','Sistem Qty','Actual Qty','Variance','Status','Nota'],...record.items.map(i=>[i.partName,i.partCode||'',i.partCat||'',i.partLoc||'',i.unit,i.systemQty,i.verified?i.actualQty:'BELUM',i.verified?i.variance:'',i.verified?(i.variance===0?'MATCH':i.variance>0?'LEBIH':'KURANG'):'BELUM',i.note||''])]);
+  const ws2=XLSX.utils.aoa_to_sheet([['Part Name','Code','Category','Location','Unit','System Qty','Actual Qty','Variance','Status','Note'],...record.items.map(i=>[i.partName,i.partCode||'',i.partCat||'',i.partLoc||'',i.unit,i.systemQty,i.verified?i.actualQty:'PENDING',i.verified?i.variance:'',i.verified?(i.variance===0?'MATCH':i.variance>0?'OVER':'SHORT'):'PENDING',i.note||''])]);
   ws2['!cols']=[{wch:30},{wch:14},{wch:14},{wch:14},{wch:8},{wch:12},{wch:12},{wch:10},{wch:10},{wch:24}];
   XLSX.utils.book_append_sheet(wb,ws2,'Detail Stocktake');
   XLSX.writeFile(wb,'Stocktake_'+record.date+'.xlsx');
@@ -2603,7 +2643,7 @@ function exportStkReport(record){
 // Stocktake QR Scanner
 function openStkScanner(){
   document.getElementById('m-stk-scan').classList.add('open');
-  document.getElementById('stk-scan-status').textContent='Scan QR code part untuk verify';
+  document.getElementById('stk-scan-status').textContent='Scan the part QR code to verify';
   startStkCamera();
 }
 async function startStkCamera(){
@@ -2611,7 +2651,7 @@ async function startStkCamera(){
     stkScanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
     const v=document.getElementById('stk-qr-video'); v.srcObject=stkScanStream; await v.play();
     stkScanInterval=setInterval(stkScanFrame,250);
-  }catch(e){document.getElementById('stk-scan-status').textContent='Kamera tidak dapat diakses.';}
+  }catch(e){document.getElementById('stk-scan-status').textContent='Camera not accessible.';}
 }
 function stkScanFrame(){
   const v=document.getElementById('stk-qr-video');
@@ -2632,7 +2672,7 @@ function handleStkScan(data){
     if(!item)throw new Error();
     closeStkScanner(); openVerify(item.partId);
   }catch(e){
-    document.getElementById('stk-scan-status').textContent='QR tidak dikenali. Cuba lagi...';
+    document.getElementById('stk-scan-status').textContent='QR not recognised. Try again...';
     setTimeout(()=>{stkScanInterval=setInterval(stkScanFrame,250);},1500);
   }
 }
@@ -2711,7 +2751,7 @@ function applyRoleUI(){
   });
   // Sync bar role info
   if(document.getElementById('sync-msg'))
-    document.getElementById('sync-msg').textContent = 'Cloud sync aktif - '+(currentUser.name||currentUser.email)+' ('+role+')';
+    document.getElementById('sync-msg').textContent = 'Cloud sync active - '+(currentUser.name||currentUser.email)+' ('+role+')';
 }
 
 // ── LOGIN / LOGOUT ────────────────────────
@@ -2720,7 +2760,7 @@ async function doLogin(){
   const pass  = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
   const btn   = document.getElementById('login-btn');
-  if(!email||!pass){errEl.textContent='Sila isi email dan password';errEl.style.display='block';return;}
+  if(!email||!pass){errEl.textContent='Please enter your email and password';errEl.style.display='block';return;}
   btn.textContent='Signing in...'; btn.disabled=true;
   errEl.style.display='none';
   try{
@@ -2728,9 +2768,9 @@ async function doLogin(){
     await signInWithEmailAndPassword(auth, email, pass);
     // onAuthStateChanged will handle the rest
   }catch(e){
-    let msg='Login gagal. Cuba semula.';
-    if(e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') msg='Email Address atau password salah.';
-    if(e.code==='auth/too-many-requests') msg='Terlalu banyak percubaan. Cuba lagi sebentar.';
+    let msg='Login failed. Please try again.';
+    if(e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential') msg='Incorrect email address or password.';
+    if(e.code==='auth/too-many-requests') msg='Too many attempts. Please try again later.';
     errEl.textContent=msg; errEl.style.display='block';
     btn.textContent='Sign In'; btn.disabled=false;
   }
@@ -2741,7 +2781,7 @@ document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key===
 document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-pass').focus();});
 
 async function doLogout(){
-  if(!confirm('Log keluar dari SpareTrack?'))return;
+  if(!confirm('Sign out of SpareTrack?'))return;
   if(window._auth){
     try{await window._auth.signOut(window._auth.auth);}catch(e){}
   }
@@ -2753,13 +2793,13 @@ async function doLogout(){
 let allUsers=[];
 
 async function createUser(){
-  if(!can('users')){toast('Tiada kebenaran!');return;}
+  if(!can('users')){toast('Permission denied!');return;}
   const name  = document.getElementById('nu-name').value.trim();
   const email = document.getElementById('nu-email').value.trim();
   const pass  = document.getElementById('nu-pass').value;
   const role  = document.getElementById('nu-role').value;
-  if(!name||!email||!pass){toast('Sila isi semua field!');return;}
-  if(pass.length<6){toast('Password minimum 6 aksara');return;}
+  if(!name||!email||!pass){toast('Please fill in all fields!');return;}
+  if(pass.length<6){toast('Password must be at least 6 characters');return;}
   try{
     // Create Firebase Auth user via REST API (secondary auth)
     // We use the Firebase REST API to create user without signing out current user
@@ -2780,8 +2820,8 @@ async function createUser(){
     ['nu-name','nu-email','nu-pass'].forEach(id=>document.getElementById(id).value='');
     loadUsers();
   }catch(e){
-    let msg=e.message||'Gagal cipta pengguna';
-    if(msg.includes('EMAIL_EXISTS')) msg='Email Address sudah digunakan';
+    let msg=e.message||'Failed to create user';
+    if(msg.includes('EMAIL_EXISTS')) msg='Email address is already in use';
     toast('Error: '+msg);
   }
 }
@@ -2818,10 +2858,10 @@ function renderUserList(){
         </select>
       </div>
     </div>`).join('');
-  document.getElementById('user-list').innerHTML=html||'<div class="empty" style="padding:20px 0">Tiada pengguna lagi</div>';
+  document.getElementById('user-list').innerHTML=html||'<div class="empty" style="padding:20px 0">No users yet</div>';
   // Also update users section list if visible
   const ul2=document.getElementById('users-section-list');
-  if(ul2) ul2.innerHTML=html||'<div class="empty" style="padding:20px 0">Tiada pengguna lagi</div>';
+  if(ul2) ul2.innerHTML=html||'<div class="empty" style="padding:20px 0">No users yet</div>';
 }
 
 async function updateUserRole(uid, newRole){
@@ -2833,9 +2873,9 @@ async function updateUserRole(uid, newRole){
       await setDoc(doc(db,'users',uid),{...user,role:newRole});
       user.role=newRole;
       renderUserList();
-      toast('Role dikemaskini ✓');
+      toast('Role updated ✓');
     }
-  }catch(e){toast('Gagal kemaskini role');}
+  }catch(e){toast('Failed to update role');}
 }
 
 // Override tab function to load users when needed
@@ -2874,12 +2914,12 @@ window.handleScan=function(data){
       p=parts.find(x=>x.id==pid);
     } else {
       const obj=JSON.parse(data);
-      if(obj.app!=='sparetrack') throw new Error('bukan SpareTrack QR');
+      if(obj.app!=='sparetrack') throw new Error('not a SpareTrack QR');
       p=parts.find(x=>x.id==obj.id)||parts.find(x=>x.code==obj.code&&x.code);
     }
-    if(!p) throw new Error('part tidak dijumpai');
+    if(!p) throw new Error('part not found');
     scannedPartId=p.id;
-    document.getElementById('scan-status').textContent='✓ Part dijumpai!';
+    document.getElementById('scan-status').textContent='✓ Part found!';
     document.getElementById('scan-part-name').textContent=p.name;
     document.getElementById('scan-part-info').textContent=`${p.code||'-'} · ${p.cat||'-'} · Stock: ${p.qty} ${p.unit}`;
     document.getElementById('scan-result').style.display='block';
@@ -2889,7 +2929,7 @@ window.handleScan=function(data){
       ${can('return')?`<button class="act" style="flex:1;justify-content:center;padding:10px;background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue)" onclick="scanQuickTxn('return')"><svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>RTN</button>`:''}
     `;
   }catch(e){
-    document.getElementById('scan-status').textContent='QR tidak dikenali. Cuba lagi...';
+    document.getElementById('scan-status').textContent='QR not recognised. Try again...';
     setTimeout(()=>{scanInterval=setInterval(scanFrame,150);},1500);
   }
 };
@@ -2956,7 +2996,7 @@ function renderApprovalList(){
   if(!list.length){
     el.innerHTML=`<div class="empty" style="padding:32px 0">
       <svg viewBox="0 0 24 24" style="width:36px;height:36px;stroke:currentColor;fill:none;stroke-width:1.5;opacity:.3;display:block;margin:0 auto 10px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      ${apvFilter==='pending'?'Tiada request pending':'Tiada rekod'}
+      ${apvFilter==='pending'?'No pending requests':'No records'}
     </div>`;
     return;
   }
@@ -2977,7 +3017,7 @@ function renderApprovalList(){
           <div style="font-size:15px;font-weight:700;color:${(r.txnType==='in')?'var(--green-text)':(r.txnType==='return')?'var(--blue-text)':'var(--amber-text)'}">${(r.txnType==='in'||r.txnType==='return')?'+':'-'}${r.qty} ${r.unit}</div>
         </div>
         <div style="background:var(--bg2);border-radius:8px;padding:7px 8px">
-          <div style="font-size:10px;color:var(--text3)">Stok Sistem</div>
+          <div style="font-size:10px;color:var(--text3)">System Stock</div>
           <div style="font-size:15px;font-weight:700">${r.systemQty} ${r.unit}</div>
         </div>
         <div style="background:var(--bg2);border-radius:8px;padding:7px 8px">
@@ -2986,10 +3026,10 @@ function renderApprovalList(){
         </div>
       </div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:8px">
-        <b>Diminta oleh:</b> ${r.requestedBy||'-'} &nbsp;·&nbsp; <b>Nota:</b> ${r.note||'-'}
+        <b>Requested by:</b> ${r.requestedBy||'-'} &nbsp;·&nbsp; <b>Note:</b> ${r.note||'-'}
       </div>
-      ${r.status==='rejected'?`<div style="font-size:12px;color:var(--red-text);background:var(--red-bg);padding:6px 10px;border-radius:6px;margin-bottom:8px">Sebab reject: ${r.rejectReason||'-'}</div>`:''}
-      ${r.status==='approved'?`<div style="font-size:12px;color:var(--green-text);margin-bottom:4px">Diluluskan oleh: ${r.approvedBy||'-'}</div>`:''}
+      ${r.status==='rejected'?`<div style="font-size:12px;color:var(--red-text);background:var(--red-bg);padding:6px 10px;border-radius:6px;margin-bottom:8px">Reject reason: ${r.rejectReason||'-'}</div>`:''}
+      ${r.status==='approved'?`<div style="font-size:12px;color:var(--green-text);margin-bottom:4px">Approved by: ${r.approvedBy||'-'}</div>`:''}
       ${r.status==='pending'&&can('approval')?`
         <div style="display:flex;gap:8px;margin-top:4px">
           <button onclick="approveRequest('${r.id}')" style="flex:1;padding:9px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✓ Approve</button>
@@ -3003,7 +3043,7 @@ async function approveRequest(reqId){
   const p=parts.find(x=>x.id==req.partId);
   const txnType = req.txnType || 'out'; // legacy requests = out
   const isIncrease = txnType==='in' || txnType==='return';
-  if(!isIncrease && p && p.qty<req.qty){toast('Insufficient stock untuk approve!');return;}
+  if(!isIncrease && p && p.qty<req.qty){toast('Insufficient stock to approve!');return;}
   const approvedBy=currentUser?currentUser.name||currentUser.email:'';
   const newQty=p?(isIncrease ? p.qty+req.qty : p.qty-req.qty):0;
   const txnData={partId:req.partId,type:txnType,qty:req.qty,date:req.date,note:req.note+' [Approved by '+approvedBy+']',user:req.requestedBy,partName:req.partName,approvedBy,approvalId:reqId,createdAt:Date.now()};
@@ -3024,22 +3064,22 @@ async function approveRequest(reqId){
     saveLocal(); refresh();
     renderApprovalList(); updateApprovalBadge();
   }
-  const verb = isIncrease ? 'ditambah' : 'dikurangkan';
-  toast(`Approved! Stok ${req.partName} ${verb} ${req.qty} ✓`);
+  const verb = isIncrease ? 'increased by' : 'reduced by';
+  toast(`Approved! ${req.partName} stock ${verb} ${req.qty} ✓`);
 }
 
 function openReject(reqId){
   const req=approvalRequests.find(r=>r.id===reqId);if(!req)return;
   document.getElementById('reject-request-id').value=reqId;
   document.getElementById('reject-reason').value='';
-  document.getElementById('reject-part-info').innerHTML=`<b>${req.partName}</b><br>Request OUT: ${req.qty} ${req.unit} · Diminta oleh: ${req.requestedBy||'-'}`;
+  document.getElementById('reject-part-info').innerHTML=`<b>${req.partName}</b><br>Request OUT: ${req.qty} ${req.unit} · Requested by: ${req.requestedBy||'-'}`;
   document.getElementById('m-reject').classList.add('open');
 }
 
 async function confirmReject(){
   const reqId=document.getElementById('reject-request-id').value;
   const reason=document.getElementById('reject-reason').value.trim();
-  if(!reason){toast('Sila isi sebab reject!');return;}
+  if(!reason){toast('Please enter a reject reason!');return;}
   const req=approvalRequests.find(r=>r.id===reqId);if(!req)return;
   const rejectedBy=currentUser?currentUser.name||currentUser.email:'';
 
@@ -3057,14 +3097,14 @@ async function confirmReject(){
 }
 
 function exportApprovalReport(){
-  if(typeof XLSX==='undefined'){toast('XLSX belum load');return;}
+  if(typeof XLSX==='undefined'){toast('XLSX library not loaded yet');return;}
   const approved=approvalRequests.filter(r=>r.status==='approved');
   const wb=XLSX.utils.book_new();
   const ws=XLSX.utils.aoa_to_sheet([
-    ['SpareTrack - Laporan Approved Parts OUT'],
-    ['Digenerate: '+new Date().toLocaleString('ms-MY')],
+    ['SpareTrack - Approved Parts OUT Report'],
+    ['Generated: '+new Date().toLocaleString('en-MY')],
     [],
-    ['Date','Part','Kod','Category','Location','Qty OUT','Unit','Diminta Oleh','Diluluskan Oleh','Nota'],
+    ['Date','Part','Code','Category','Location','Qty OUT','Unit','Requested By','Approved By','Note'],
     ...approved.map(r=>[r.date,r.partName,r.partCode||'',r.partCat||'',r.partLoc||'',r.qty,r.unit,r.requestedBy||'',r.approvedBy||'',r.note||''])
   ]);
   ws['!cols']=[{wch:12},{wch:30},{wch:14},{wch:14},{wch:14},{wch:8},{wch:8},{wch:18},{wch:18},{wch:24}];
@@ -3099,19 +3139,19 @@ function viewPartImage(partId){
     actions.innerHTML=`
       <button onclick="document.getElementById('img-file-input').click()" class="sub-btn" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px">
         <svg style="width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        ${p.img?'Tukar Gambar':'Upload Gambar'}
+        ${p.img?'Change Image':'Upload Image'}
       </button>
-      ${p.img?`<button onclick="removePartImage('${partId}')" style="padding:12px 14px;background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red-bg);border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:inherit">Padam</button>`:''}
+      ${p.img?`<button onclick="removePartImage('${partId}')" style="padding:12px 14px;background:var(--red-bg);color:var(--red-text);border:0.5px solid var(--red-bg);border-radius:var(--radius);cursor:pointer;font-size:13px;font-family:inherit">Delete</button>`:''}
     `;
   } else {
-    actions.innerHTML = p.img?'':`<div style="font-size:13px;color:var(--text3);text-align:center;width:100%">Tiada gambar</div>`;
+    actions.innerHTML = p.img?'':`<div style="font-size:13px;color:var(--text3);text-align:center;width:100%">No image</div>`;
   }
   document.getElementById('m-img').classList.add('open');
 }
 
 function handleImageUpload(input){
   const file=input.files[0];if(!file)return;
-  if(!file.type.startsWith('image/')){toast('Sila pilih fail gambar');return;}
+  if(!file.type.startsWith('image/')){toast('Please choose an image file');return;}
   const reader=new FileReader();
   reader.onload=e=>{
     const img=new Image();
@@ -3149,7 +3189,7 @@ function handleImageUpload(input){
 }
 
 async function removePartImage(partId){
-  if(!confirm('Padam gambar?'))return;
+  if(!confirm('Delete image?'))return;
   const p=parts.find(x=>x.id==partId);if(!p)return;
   delete p.img;
   if(useCloud){
@@ -3170,14 +3210,14 @@ function updateFilterSummary(){
   const dateTo=document.getElementById('filter-date-to').value;
   const el=document.getElementById('filter-summary');
   if(!dateFrom&&!dateTo){
-    el.textContent='Tiada filter - semua data akan diexport';
+    el.textContent='No filter - all data will be exported';
     el.style.color='var(--text3)';
     return;
   }
   const filtered=getFilteredTxn();
-  const from=dateFrom||'Awal';
-  const to=dateTo||'Sekarang';
-  el.innerHTML=`<span style="color:var(--blue-text);font-weight:500">${filtered.length} transaksi</span> dari <b>${from}</b> hingga <b>${to}</b>`;
+  const from=dateFrom||'Start';
+  const to=dateTo||'Now';
+  el.innerHTML=`<span style="color:var(--blue-text);font-weight:500">${filtered.length} transactions</span> from <b>${from}</b> to <b>${to}</b>`;
 }
 
 function getFilterRange(){
@@ -3221,7 +3261,7 @@ window.exportExcel=function(){
   const {dateFrom,dateTo}=getFilterRange();
   _origExportExcel();
   transactions=orig;
-  if(dateFrom||dateTo) toast(`Export ${getFilteredTxn().length} transaksi ✓`);
+  if(dateFrom||dateTo) toast(`Exported ${getFilteredTxn().length} transactions ✓`);
 };
 
 const _origExportCSV=window.exportCSV;
