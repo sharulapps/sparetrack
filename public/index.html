@@ -662,15 +662,24 @@ body{
   body{ padding:24px 20px }
   .app-wrap{ max-width:860px; overflow:clip }
   .section{ padding:22px 26px }
-  #parts-list, #alert-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; align-items:start }
-  #parts-list > *:not(.part-card), #alert-list > *:not(.alert-card){ grid-column:1/-1 }
-  #parts-list .part-card, #alert-list .alert-card{ margin-bottom:0 }
+  /* Parts: one row per part, top to bottom */
+  #parts-list .part-card{ display:flex; align-items:center; gap:18px; padding:12px 16px; margin-bottom:8px }
+  #parts-list .part-card .pt{ flex:1; min-width:0; margin-bottom:0; align-items:center }
+  #parts-list .part-card .pb{ flex:0 0 auto; flex-wrap:nowrap; gap:16px }
+  #parts-list .part-card .pmeta{ white-space:nowrap }
+  #parts-list .part-card:hover{ transform:none }
   .stat-grid{ grid-template-columns:repeat(4,1fr) }
   .sheet{ max-width:560px }
   #m-excel-preview .sheet{ max-width:760px }
 }
 
 /* Desktop: sidebar layout */
+@media (min-width:600px) and (max-width:819px){
+  /* Not enough width for a single-line row: stack stock/actions under the name */
+  #parts-list .part-card{ display:block }
+  #parts-list .part-card .pt{ margin-bottom:10px }
+  #parts-list .part-card .pb{ flex-wrap:wrap }
+}
 @media (min-width:1024px){
   body{ padding:28px }
   .app-wrap{ max-width:1320px; min-height:calc(100vh - 56px) }
@@ -703,13 +712,9 @@ body{
   .app-wrap .nav-btn:hover{ background:rgba(10,22,40,.04); color:var(--text2) }
   .app-wrap .nav-btn.active{ background:#fff; border-left-color:var(--gold); box-shadow:var(--shadow-sm) }
   .app-wrap > .section{ grid-column:2; grid-row:4; padding:28px 32px; min-width:0 }
-  #parts-list, #alert-list{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px }
   .search-row{ max-width:760px }
   #rpt .exp-btn, #approval .exp-btn{ max-width:560px }
   #stk-idle > .sub-btn, #users > .sub-btn{ max-width:320px }
-}
-@media (min-width:1440px){
-  #parts-list, #alert-list{ grid-template-columns:repeat(3,minmax(0,1fr)) }
 }
 </style>
 
