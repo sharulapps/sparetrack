@@ -450,6 +450,34 @@ body {
 .sval.green { color: var(--green) }
 .sval.amber { color: var(--amber) }
 .sval.indigo { color: #4338CA }
+/* Duplicate check */
+.dup-btn {
+  display:flex; align-items:center; gap:6px;
+  padding:9px 14px; border-radius:var(--radius);
+  border:1.5px solid var(--navy); background:var(--bg);
+  color:var(--navy); font-size:12px; font-weight:700; font-family:inherit;
+  text-transform:uppercase; letter-spacing:.3px; cursor:pointer; white-space:nowrap; transition:.2s;
+}
+.dup-btn:hover { background:var(--navy); color:#fff }
+.dup-btn svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+#m-dup .sheet { max-width:980px }
+.dup-sum { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px }
+.dup-chip { font-size:11px; font-weight:700; padding:5px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:.3px }
+.dup-chip.exact { background:var(--red-bg); color:var(--red-t) }
+.dup-chip.code  { background:var(--amber-bg); color:var(--amber-t) }
+.dup-chip.name  { background:#EEF2FF; color:#3730A3 }
+.dup-chip.sim   { background:var(--bg2); color:var(--text2); border:1px solid var(--border2) }
+.dup-group { border:1.5px solid var(--border2); border-radius:var(--radius-lg); margin-bottom:12px; overflow:hidden }
+.dup-head { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:10px 12px; background:var(--bg2); border-bottom:1px solid var(--border); font-size:12px; font-weight:700; color:var(--navy) }
+.dup-scroll { overflow-x:auto }
+.dup-table { width:100%; border-collapse:collapse; font-size:12px; min-width:760px }
+.dup-table th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--text3); padding:8px 10px; border-bottom:1px solid var(--border); white-space:nowrap }
+.dup-table td { padding:8px 10px; border-bottom:1px solid var(--border); color:var(--text); vertical-align:top }
+.dup-table tr:last-child td { border-bottom:none }
+.dup-table td.same { background:#FFF7E6; color:var(--amber-t); font-weight:600 }
+.dup-table .act { padding:4px 9px }
+.dup-table td:first-child { min-width:170px }
+#inv .search-wrap { flex:1 1 300px }
 .part-card.near { border-left: 3px solid var(--amber) }
 .part-card.over { border-left: 3px solid #6366F1 }
 .alert-card.near { border-color: rgba(217,119,6,.2); border-left-color: var(--amber); box-shadow: 0 2px 8px rgba(217,119,6,.06) }
@@ -660,6 +688,7 @@ body{
   .logo-sub{ max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
   .search-wrap{ min-width:100% }
   .search-row .filter-btn{ flex:1 1 calc(50% - 4px); padding:9px 8px }
+  .search-row .dup-btn{ flex:1 1 100%; justify-content:center }
   .fr{ gap:10px }
   .sval{ font-size:24px }
 }
@@ -719,7 +748,7 @@ body{
   .app-wrap .nav-btn:hover{ background:rgba(10,22,40,.04); color:var(--text2) }
   .app-wrap .nav-btn.active{ background:#fff; border-left-color:var(--gold); box-shadow:var(--shadow-sm) }
   .app-wrap > .section{ grid-column:2; grid-row:4; padding:28px 32px; min-width:0 }
-  .search-row{ max-width:760px }
+  .search-row{ max-width:none }
   #rpt .exp-btn, #approval .exp-btn{ max-width:560px }
   #stk-idle > .sub-btn, #users > .sub-btn{ max-width:320px }
 }
@@ -961,6 +990,10 @@ async function sendPasswordReset(email){
     <button class="filter-btn" id="f-low" onclick="setFilter('low',this)">Low Stock</button>
     <button class="filter-btn" id="f-near" onclick="setFilter('near',this)">Near Finish</button>
     <button class="filter-btn" id="f-over" onclick="setFilter('over',this)">Over Stock</button>
+    <button class="dup-btn" onclick="openDupCheck()" title="Scan all parts for duplicate entries">
+      <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Check Duplicates
+    </button>
   </div>
   <div id="parts-list"></div>
 </div>
@@ -1285,6 +1318,18 @@ async function sendPasswordReset(email){
 </div>
 
 <!-- Approval Reject Modal -->
+<!-- Duplicate Check Modal -->
+<div class="overlay" id="m-dup">
+<div class="sheet">
+  <div class="sheet-title">
+    <span>Duplicate Check</span>
+    <button class="close" aria-label="Close" onclick="closeM('m-dup')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div id="dup-summary"></div>
+  <div id="dup-list"></div>
+</div>
+</div>
+
 <div class="overlay" id="m-reject">
 <div class="sheet">
   <div class="sheet-title">
@@ -1863,6 +1908,114 @@ async function saveTxn(){
 }
 
 function closeM(id){document.getElementById(id).classList.remove('open');}
+
+// ── DUPLICATE CHECK ───────────────────────────
+// Scans every part and groups entries that look like the same item.
+// Read-only: nothing is merged or deleted automatically.
+//   exact = same name + code + category + location + supplier + unit
+//   code  = same part code (ignoring case, spaces, dashes)
+//   name  = same name (ignoring case, spaces, punctuation)
+//   sim   = very similar name with the same numbers (e.g. "100ET" vs "100 ET")
+const DUP_REASONS={
+  exact:{label:'Identical Entry',rank:0},
+  code: {label:'Same Code',rank:1},
+  name: {label:'Same Name',rank:2},
+  sim:  {label:'Similar Name',rank:3}
+};
+function dupEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function dupNorm(v){return String(v==null?'':v).toUpperCase().replace(/[^A-Z0-9]/g,'');}
+function dupBigrams(str){const m=new Map();for(let i=0;i<str.length-1;i++){const g=str.slice(i,i+2);m.set(g,(m.get(g)||0)+1);}return m;}
+function dupDice(a,b){
+  if(a.size===0||b.size===0)return 0;
+  let inter=0,na=0,nb=0;
+  a.forEach(v=>na+=v); b.forEach(v=>nb+=v);
+  a.forEach((v,g)=>{if(b.has(g))inter+=Math.min(v,b.get(g));});
+  return 2*inter/(na+nb);
+}
+function findDuplicates(){
+  const info=parts.map(p=>{
+    const name=dupNorm(p.name);
+    const nums=(String(p.name||'').toUpperCase().match(/\d+(\.\d+)?/g)||[]).sort().join('|');
+    return {p,name,code:dupNorm(p.code),nums,bi:dupBigrams(name),
+      detail:[name,dupNorm(p.code),dupNorm(p.cat),dupNorm(p.loc),dupNorm(p.supplier),dupNorm(p.unit)].join('~')};
+  });
+  const parent=info.map((_,i)=>i);
+  const find=i=>parent[i]===i?i:(parent[i]=find(parent[i]));
+  const pairReasons=new Map(); // "i,j" -> Set(reason)
+  const link=(i,j,r)=>{
+    if(i===j)return;
+    const k=i<j?i+','+j:j+','+i;
+    if(!pairReasons.has(k))pairReasons.set(k,new Set());
+    pairReasons.get(k).add(r);
+    parent[find(i)]=find(j);
+  };
+  const bucket=(key,r)=>{
+    const m=new Map();
+    info.forEach((x,i)=>{const v=key(x);if(!v)return;if(!m.has(v))m.set(v,[]);m.get(v).push(i);});
+    m.forEach(ids=>{for(let a=1;a<ids.length;a++)for(let b=0;b<a;b++)link(ids[a],ids[b],r);});
+  };
+  bucket(x=>x.name&&x.detail,'exact');
+  bucket(x=>x.code,'code');
+  bucket(x=>x.name,'name');
+  // Similar names: only compare parts whose numbers match, so "100ET" never matches "80FE"
+  const byNums=new Map();
+  info.forEach((x,i)=>{if(x.name.length<4)return;if(!byNums.has(x.nums))byNums.set(x.nums,[]);byNums.get(x.nums).push(i);});
+  byNums.forEach(ids=>{
+    for(let a=1;a<ids.length;a++)for(let b=0;b<a;b++){
+      const A=info[ids[a]],B=info[ids[b]];
+      if(A.name===B.name)continue;
+      const la=A.name.length,lb=B.name.length;
+      if(Math.min(la,lb)/Math.max(la,lb)<0.8)continue;
+      if(dupDice(A.bi,B.bi)>=0.9)link(ids[a],ids[b],'sim');
+    }
+  });
+  const groups=new Map();
+  pairReasons.forEach((rs,k)=>{
+    const [i,j]=k.split(',').map(Number);const root=find(i);
+    if(!groups.has(root))groups.set(root,{ids:new Set(),reasons:new Set()});
+    const g=groups.get(root);g.ids.add(i);g.ids.add(j);rs.forEach(r=>g.reasons.add(r));
+  });
+  return [...groups.values()].map(g=>{
+    const reasons=[...g.reasons].sort((a,b)=>DUP_REASONS[a].rank-DUP_REASONS[b].rank);
+    return {parts:[...g.ids].map(i=>info[i].p),reasons,top:reasons[0]};
+  }).sort((a,b)=>DUP_REASONS[a.top].rank-DUP_REASONS[b.top].rank||String(a.parts[0].name).localeCompare(String(b.parts[0].name)));
+}
+function openDupCheck(){
+  const groups=findDuplicates();
+  const sum=document.getElementById('dup-summary');
+  const list=document.getElementById('dup-list');
+  if(!groups.length){
+    sum.innerHTML='';
+    list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>No duplicate entries found in '+parts.length+' parts.</div>';
+    document.getElementById('m-dup').classList.add('open');return;
+  }
+  const count=r=>groups.filter(g=>g.top===r).length;
+  const totalParts=groups.reduce((a,g)=>a+g.parts.length,0);
+  sum.innerHTML=`<div style="font-size:13px;color:var(--text2);margin-bottom:10px">Scanned <b style="color:var(--text)">${parts.length}</b> parts · found <b style="color:var(--text)">${groups.length}</b> possible duplicate group(s) covering <b style="color:var(--text)">${totalParts}</b> parts. Matching fields are highlighted.</div>
+    <div class="dup-sum">${Object.keys(DUP_REASONS).filter(r=>count(r)).map(r=>`<span class="dup-chip ${r}">${DUP_REASONS[r].label}: ${count(r)}</span>`).join('')}</div>`;
+  const cols=[['name','Part Name'],['code','Code'],['cat','Category'],['loc','Location'],['supplier','Supplier'],['unit','Unit'],['qty','Stock'],['min','Min'],['max','Max'],['cost','Unit Cost']];
+  const txnCount=id=>transactions.filter(t=>t.partId==id).length;
+  list.innerHTML=groups.map((g,gi)=>{
+    const same={};
+    cols.forEach(([k])=>{
+      const vals=g.parts.map(p=>k==='name'||k==='code'||k==='cat'||k==='loc'||k==='supplier'||k==='unit'?dupNorm(p[k]):String(p[k]==null?'':p[k]));
+      same[k]=vals[0]!==''&&vals.every(v=>v===vals[0]);
+    });
+    const rows=g.parts.map(p=>`<tr>
+      ${cols.map(([k])=>`<td class="${same[k]?'same':''}">${dupEsc(p[k]==null||p[k]===''?'-':p[k])}</td>`).join('')}
+      <td>${txnCount(p.id)}</td>
+      <td>${can('edit')?`<button class="act" onclick="closeM('m-dup');openEdit('${p.id}')">Edit</button>`:''}</td>
+    </tr>`).join('');
+    return `<div class="dup-group">
+      <div class="dup-head">Group ${gi+1} · ${g.parts.length} parts ${g.reasons.map(r=>`<span class="dup-chip ${r}">${DUP_REASONS[r].label}</span>`).join('')}</div>
+      <div class="dup-scroll"><table class="dup-table">
+        <thead><tr>${cols.map(([,h])=>`<th>${h}</th>`).join('')}<th>Txns</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+  document.getElementById('m-dup').classList.add('open');
+}
 document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 
 function toast(msg){
