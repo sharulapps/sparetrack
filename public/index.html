@@ -464,9 +464,6 @@ body {
 .dup-sum { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px }
 .dup-chip { font-size:11px; font-weight:700; padding:5px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:.3px }
 .dup-chip.exact { background:var(--red-bg); color:var(--red-t) }
-.dup-chip.code  { background:var(--amber-bg); color:var(--amber-t) }
-.dup-chip.name  { background:#EEF2FF; color:#3730A3 }
-.dup-chip.sim   { background:var(--bg2); color:var(--text2); border:1px solid var(--border2) }
 .dup-group { border:1.5px solid var(--border2); border-radius:var(--radius-lg); margin-bottom:12px; overflow:hidden }
 .dup-head { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:10px 12px; background:var(--bg2); border-bottom:1px solid var(--border); font-size:12px; font-weight:700; color:var(--navy) }
 .dup-scroll { overflow-x:auto }
@@ -476,7 +473,10 @@ body {
 .dup-table tr:last-child td { border-bottom:none }
 .dup-table td.same { background:#FFF7E6; color:var(--amber-t); font-weight:600 }
 .dup-table .act { padding:4px 9px }
-.dup-table td:first-child { min-width:170px }
+.dup-table td:first-child { min-width:160px }
+.dup-table th, .dup-table td { padding-left:8px; padding-right:8px }
+.dup-table th:last-child, .dup-table td:last-child { position:sticky; right:0; background:#fff; box-shadow:-6px 0 8px -6px rgba(10,22,40,.12) }
+.dup-table td.same:last-child { background:#fff }
 #inv .search-wrap { flex:1 1 300px }
 .part-card.near { border-left: 3px solid var(--amber) }
 .part-card.over { border-left: 3px solid #6366F1 }
@@ -1910,77 +1910,33 @@ async function saveTxn(){
 function closeM(id){document.getElementById(id).classList.remove('open');}
 
 // ── DUPLICATE CHECK ───────────────────────────
-// Scans every part and groups entries that look like the same item.
+// Scans every part and groups entries that are the same item entered more than once.
+// A pair only counts as a duplicate when EVERY field below matches; if any one
+// field differs, the parts are treated as separate records.
+//   text fields: compared ignoring case, spaces and punctuation
+//   number fields: compared by value (blank = 0)
+// Current stock and transaction count are not compared - they change with usage.
 // Read-only: nothing is merged or deleted automatically.
-// Parts must share the same location to count as duplicates; the same part stored
-// at a different location is a separate stock record.
-//   exact = same name + code + category + location + supplier + unit
-//   code  = same part code (ignoring case, spaces, dashes)
-//   name  = same name (ignoring case, spaces, punctuation)
-//   sim   = very similar name with the same numbers (e.g. "100ET" vs "100 ET")
-const DUP_REASONS={
-  exact:{label:'Identical Entry',rank:0},
-  code: {label:'Same Code',rank:1},
-  name: {label:'Same Name',rank:2},
-  sim:  {label:'Similar Name',rank:3}
-};
+const DUP_TEXT_FIELDS=['name','code','cat','loc','supplier','unit','leadtime'];
+const DUP_NUM_FIELDS=['min','max','cost'];
+const DUP_REASONS={exact:{label:'All Fields Match',rank:0}};
 function dupEsc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function dupNorm(v){return String(v==null?'':v).toUpperCase().replace(/[^A-Z0-9]/g,'');}
-function dupBigrams(str){const m=new Map();for(let i=0;i<str.length-1;i++){const g=str.slice(i,i+2);m.set(g,(m.get(g)||0)+1);}return m;}
-function dupDice(a,b){
-  if(a.size===0||b.size===0)return 0;
-  let inter=0,na=0,nb=0;
-  a.forEach(v=>na+=v); b.forEach(v=>nb+=v);
-  a.forEach((v,g)=>{if(b.has(g))inter+=Math.min(v,b.get(g));});
-  return 2*inter/(na+nb);
+function dupNum(v){const n=parseFloat(v);return isFinite(n)?n:0;}
+function dupKey(p){
+  return DUP_TEXT_FIELDS.map(f=>dupNorm(p[f])).concat(DUP_NUM_FIELDS.map(f=>dupNum(p[f]))).join('~');
 }
 function findDuplicates(){
-  const info=parts.map(p=>{
-    const name=dupNorm(p.name);
-    const nums=(String(p.name||'').toUpperCase().match(/\d+(\.\d+)?/g)||[]).sort().join('|');
-    return {p,name,code:dupNorm(p.code),loc:dupNorm(p.loc),nums,bi:dupBigrams(name),
-      detail:[name,dupNorm(p.code),dupNorm(p.cat),dupNorm(p.loc),dupNorm(p.supplier),dupNorm(p.unit)].join('~')};
+  const m=new Map();
+  parts.forEach(p=>{
+    if(!dupNorm(p.name))return;
+    const k=dupKey(p);
+    if(!m.has(k))m.set(k,[]);
+    m.get(k).push(p);
   });
-  const parent=info.map((_,i)=>i);
-  const find=i=>parent[i]===i?i:(parent[i]=find(parent[i]));
-  const pairReasons=new Map(); // "i,j" -> Set(reason)
-  const link=(i,j,r)=>{
-    if(i===j)return;
-    const k=i<j?i+','+j:j+','+i;
-    if(!pairReasons.has(k))pairReasons.set(k,new Set());
-    pairReasons.get(k).add(r);
-    parent[find(i)]=find(j);
-  };
-  const bucket=(key,r)=>{
-    const m=new Map();
-    info.forEach((x,i)=>{const v=key(x);if(!v)return;if(!m.has(v))m.set(v,[]);m.get(v).push(i);});
-    m.forEach(ids=>{for(let a=1;a<ids.length;a++)for(let b=0;b<a;b++)link(ids[a],ids[b],r);});
-  };
-  bucket(x=>x.name&&x.detail,'exact');
-  bucket(x=>x.code&&x.code+'@'+x.loc,'code');
-  bucket(x=>x.name&&x.name+'@'+x.loc,'name');
-  // Similar names: only compare parts at the same location whose numbers match, so "100ET" never matches "80FE"
-  const byNums=new Map();
-  info.forEach((x,i)=>{if(x.name.length<4)return;const k=x.nums+'@'+x.loc;if(!byNums.has(k))byNums.set(k,[]);byNums.get(k).push(i);});
-  byNums.forEach(ids=>{
-    for(let a=1;a<ids.length;a++)for(let b=0;b<a;b++){
-      const A=info[ids[a]],B=info[ids[b]];
-      if(A.name===B.name)continue;
-      const la=A.name.length,lb=B.name.length;
-      if(Math.min(la,lb)/Math.max(la,lb)<0.8)continue;
-      if(dupDice(A.bi,B.bi)>=0.9)link(ids[a],ids[b],'sim');
-    }
-  });
-  const groups=new Map();
-  pairReasons.forEach((rs,k)=>{
-    const [i,j]=k.split(',').map(Number);const root=find(i);
-    if(!groups.has(root))groups.set(root,{ids:new Set(),reasons:new Set()});
-    const g=groups.get(root);g.ids.add(i);g.ids.add(j);rs.forEach(r=>g.reasons.add(r));
-  });
-  return [...groups.values()].map(g=>{
-    const reasons=[...g.reasons].sort((a,b)=>DUP_REASONS[a].rank-DUP_REASONS[b].rank);
-    return {parts:[...g.ids].map(i=>info[i].p),reasons,top:reasons[0]};
-  }).sort((a,b)=>DUP_REASONS[a.top].rank-DUP_REASONS[b.top].rank||String(a.parts[0].name).localeCompare(String(b.parts[0].name)));
+  return [...m.values()].filter(g=>g.length>1)
+    .map(g=>({parts:g,reasons:['exact'],top:'exact'}))
+    .sort((a,b)=>String(a.parts[0].name).localeCompare(String(b.parts[0].name)));
 }
 function openDupCheck(){
   const groups=findDuplicates();
@@ -1988,20 +1944,20 @@ function openDupCheck(){
   const list=document.getElementById('dup-list');
   if(!groups.length){
     sum.innerHTML='';
-    list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>No duplicate entries found in '+parts.length+' parts (parts at different locations are not counted).</div>';
+    list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>No duplicate entries found in '+parts.length+' parts. Parts only count as duplicates when every field matches.</div>';
     document.getElementById('m-dup').classList.add('open');return;
   }
   const count=r=>groups.filter(g=>g.top===r).length;
   const totalParts=groups.reduce((a,g)=>a+g.parts.length,0);
-  sum.innerHTML=`<div style="font-size:13px;color:var(--text2);margin-bottom:10px">Scanned <b style="color:var(--text)">${parts.length}</b> parts · found <b style="color:var(--text)">${groups.length}</b> possible duplicate group(s) covering <b style="color:var(--text)">${totalParts}</b> parts. Only parts at the same location are compared. Matching fields are highlighted.</div>
+  sum.innerHTML=`<div style="font-size:13px;color:var(--text2);margin-bottom:10px">Scanned <b style="color:var(--text)">${parts.length}</b> parts · found <b style="color:var(--text)">${groups.length}</b> possible duplicate group(s) covering <b style="color:var(--text)">${totalParts}</b> parts. Every field must match (name, code, category, location, supplier, unit, lead time, min, max, unit cost). Stock and transactions are not compared.</div>
     <div class="dup-sum">${Object.keys(DUP_REASONS).filter(r=>count(r)).map(r=>`<span class="dup-chip ${r}">${DUP_REASONS[r].label}: ${count(r)}</span>`).join('')}</div>`;
-  const cols=[['name','Part Name'],['code','Code'],['cat','Category'],['loc','Location'],['supplier','Supplier'],['unit','Unit'],['qty','Stock'],['min','Min'],['max','Max'],['cost','Unit Cost']];
+  const cols=[['name','Part Name'],['code','Code'],['cat','Category'],['loc','Location'],['supplier','Supplier'],['unit','Unit'],['leadtime','Lead Time'],['min','Min'],['max','Max'],['cost','Unit Cost'],['qty','Stock']];
   const txnCount=id=>transactions.filter(t=>t.partId==id).length;
   list.innerHTML=groups.map((g,gi)=>{
     const same={};
     cols.forEach(([k])=>{
-      const vals=g.parts.map(p=>k==='name'||k==='code'||k==='cat'||k==='loc'||k==='supplier'||k==='unit'?dupNorm(p[k]):String(p[k]==null?'':p[k]));
-      same[k]=vals[0]!==''&&vals.every(v=>v===vals[0]);
+      const vals=g.parts.map(p=>DUP_TEXT_FIELDS.includes(k)?dupNorm(p[k]):DUP_NUM_FIELDS.includes(k)?String(dupNum(p[k])):String(p[k]==null?'':p[k]));
+      same[k]=(DUP_TEXT_FIELDS.includes(k)||DUP_NUM_FIELDS.includes(k))&&vals.every(v=>v===vals[0]);
     });
     const rows=g.parts.map(p=>`<tr>
       ${cols.map(([k])=>`<td class="${same[k]?'same':''}">${dupEsc(p[k]==null||p[k]===''?'-':p[k])}</td>`).join('')}
