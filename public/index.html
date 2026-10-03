@@ -1912,6 +1912,8 @@ function closeM(id){document.getElementById(id).classList.remove('open');}
 // ── DUPLICATE CHECK ───────────────────────────
 // Scans every part and groups entries that look like the same item.
 // Read-only: nothing is merged or deleted automatically.
+// Parts must share the same location to count as duplicates; the same part stored
+// at a different location is a separate stock record.
 //   exact = same name + code + category + location + supplier + unit
 //   code  = same part code (ignoring case, spaces, dashes)
 //   name  = same name (ignoring case, spaces, punctuation)
@@ -1936,7 +1938,7 @@ function findDuplicates(){
   const info=parts.map(p=>{
     const name=dupNorm(p.name);
     const nums=(String(p.name||'').toUpperCase().match(/\d+(\.\d+)?/g)||[]).sort().join('|');
-    return {p,name,code:dupNorm(p.code),nums,bi:dupBigrams(name),
+    return {p,name,code:dupNorm(p.code),loc:dupNorm(p.loc),nums,bi:dupBigrams(name),
       detail:[name,dupNorm(p.code),dupNorm(p.cat),dupNorm(p.loc),dupNorm(p.supplier),dupNorm(p.unit)].join('~')};
   });
   const parent=info.map((_,i)=>i);
@@ -1955,11 +1957,11 @@ function findDuplicates(){
     m.forEach(ids=>{for(let a=1;a<ids.length;a++)for(let b=0;b<a;b++)link(ids[a],ids[b],r);});
   };
   bucket(x=>x.name&&x.detail,'exact');
-  bucket(x=>x.code,'code');
-  bucket(x=>x.name,'name');
-  // Similar names: only compare parts whose numbers match, so "100ET" never matches "80FE"
+  bucket(x=>x.code&&x.code+'@'+x.loc,'code');
+  bucket(x=>x.name&&x.name+'@'+x.loc,'name');
+  // Similar names: only compare parts at the same location whose numbers match, so "100ET" never matches "80FE"
   const byNums=new Map();
-  info.forEach((x,i)=>{if(x.name.length<4)return;if(!byNums.has(x.nums))byNums.set(x.nums,[]);byNums.get(x.nums).push(i);});
+  info.forEach((x,i)=>{if(x.name.length<4)return;const k=x.nums+'@'+x.loc;if(!byNums.has(k))byNums.set(k,[]);byNums.get(k).push(i);});
   byNums.forEach(ids=>{
     for(let a=1;a<ids.length;a++)for(let b=0;b<a;b++){
       const A=info[ids[a]],B=info[ids[b]];
@@ -1986,12 +1988,12 @@ function openDupCheck(){
   const list=document.getElementById('dup-list');
   if(!groups.length){
     sum.innerHTML='';
-    list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>No duplicate entries found in '+parts.length+' parts.</div>';
+    list.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>No duplicate entries found in '+parts.length+' parts (parts at different locations are not counted).</div>';
     document.getElementById('m-dup').classList.add('open');return;
   }
   const count=r=>groups.filter(g=>g.top===r).length;
   const totalParts=groups.reduce((a,g)=>a+g.parts.length,0);
-  sum.innerHTML=`<div style="font-size:13px;color:var(--text2);margin-bottom:10px">Scanned <b style="color:var(--text)">${parts.length}</b> parts · found <b style="color:var(--text)">${groups.length}</b> possible duplicate group(s) covering <b style="color:var(--text)">${totalParts}</b> parts. Matching fields are highlighted.</div>
+  sum.innerHTML=`<div style="font-size:13px;color:var(--text2);margin-bottom:10px">Scanned <b style="color:var(--text)">${parts.length}</b> parts · found <b style="color:var(--text)">${groups.length}</b> possible duplicate group(s) covering <b style="color:var(--text)">${totalParts}</b> parts. Only parts at the same location are compared. Matching fields are highlighted.</div>
     <div class="dup-sum">${Object.keys(DUP_REASONS).filter(r=>count(r)).map(r=>`<span class="dup-chip ${r}">${DUP_REASONS[r].label}: ${count(r)}</span>`).join('')}</div>`;
   const cols=[['name','Part Name'],['code','Code'],['cat','Category'],['loc','Location'],['supplier','Supplier'],['unit','Unit'],['qty','Stock'],['min','Min'],['max','Max'],['cost','Unit Cost']];
   const txnCount=id=>transactions.filter(t=>t.partId==id).length;
