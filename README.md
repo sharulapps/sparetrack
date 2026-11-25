@@ -34,3 +34,10 @@ never live data, by `tools/record-tutorials.mjs` in the sharulapps/sparetrak rep
 # in sparetrak, with this repo checked out next to it
 TUT_APP=../sparetrack/public TUT_OUT=../sparetrack/public/tutorials npm run tutorials:v1
 ```
+
+## Part Lifespan
+
+OUT / RETURN / Request OUT have an optional **Machine / Location used** field (stored as `machine`).
+**Reports → Part Lifespan** shows, per part + machine, the days between OUTs (average / min / max),
+last OUT, next expected replacement, Overdue / Due soon and "Failed early". RETURNs cancel the latest
+earlier OUT, same-day OUTs count once, stocktake adjustments are ignored. Export Excel included.
