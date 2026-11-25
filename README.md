@@ -41,3 +41,9 @@ OUT / RETURN / Request OUT have an optional **Machine / Location used** field (s
 **Reports → Part Lifespan** shows, per part + machine, the days between OUTs (average / min / max),
 last OUT, **Next change** (overdue / within 14 days) and "Failed early". RETURNs cancel the latest
 earlier OUT, same-day OUTs count once, stocktake adjustments are ignored. Export Excel included.
+
+## PM Schedule
+
+**PM** in the menu: PM date = last OUT on that machine + 85% (adjustable) of the part's usual life,
+for part + machine pairs with 3+ OUTs and a steady life. Stock check, "Done → record OUT", and
+**Export for VELOXA** (an .xlsx for VELOXA's Import Excel; re-importing updates the same tasks).
