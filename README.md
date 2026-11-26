@@ -38,7 +38,7 @@ TUT_APP=../sparetrack/public TUT_OUT=../sparetrack/public/tutorials npm run tuto
 ## Part Lifespan
 
 OUT / RETURN / Request OUT have an optional **Machine / Location used** field (stored as `machine`).
-**Reports → Part Lifespan** shows, per part + machine, the days between OUTs (average / min / max),
+**Reports → Part Lifespan** shows, per part + machine, the days between OUTs (average / min / max), estimated use per year,
 last OUT, **Next change** (overdue / within 14 days) and "Failed early". RETURNs cancel the latest
 earlier OUT, same-day OUTs count once, stocktake adjustments are ignored. Export Excel included.
 
