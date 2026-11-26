@@ -47,3 +47,9 @@ earlier OUT, same-day OUTs count once, stocktake adjustments are ignored. Export
 **PM** in the menu: PM date = last OUT on that machine + 85% (adjustable) of the part's usual life,
 for part + machine pairs with 3+ OUTs and a steady life. Stock check, "Done → record OUT", and
 **Export for VELOXA** (an .xlsx for VELOXA's Import Excel; re-importing updates the same tasks).
+
+## Spare Part Budget
+
+**Reports → Spare Part Budget**: next 12 months per part = estimated use per year × Unit Cost, with
+contingency (default +10%), "to buy" after stock on hand, breakdown by category / supplier / location,
+and Excel export. Parts without a Unit Cost are flagged.
