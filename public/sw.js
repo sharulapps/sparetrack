@@ -1,4 +1,4 @@
-const CACHE = 'sparetrack-v29';
+const CACHE = 'sparetrack-v30';
 const URLS = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', e => {
