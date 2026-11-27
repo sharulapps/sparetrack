@@ -67,3 +67,10 @@ Test (emulators): `npm run e2e:v1-users` in sharulapps/sparetrak.
 KPI card **Stock Value** (stock × Unit Cost, change vs 30 days ago) and **Reports → Stock Valuation**:
 total, dead stock (no OUT for 6/12/24 months), value above Max Stock, breakdown by category / location /
 supplier, Excel export.
+
+## PDF Reports
+
+**Reports → PDF Reports**: Inventory list, Reorder list (low stock + near finish, suggested order qty up to
+Max Stock, supplier, cost, signature lines), Stock valuation, PM schedule, Spare part budget. Company name
+on the reports is set in the dialog (remembered per device). jsPDF 2.5.1 + autoTable 3.8.2 from cdnjs,
+loaded only when a report is made.
