@@ -1142,7 +1142,6 @@ async function sendPasswordReset(email){
 
 <!-- USERS SECTION -->
 <div id="users" class="section">
-  <div style="font-size:16px;font-weight:600;margin-bottom:4px">User Management</div>
   <div style="font-size:13px;color:var(--text2);margin-bottom:16px">Add and manage SpareTrack user accounts</div>
   <button class="sub-btn" onclick="document.getElementById('m-users').classList.add('open');loadUsers();" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px">
     <svg style="width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
@@ -1549,12 +1548,29 @@ async function initFirebase(){
             currentUser={uid:user.uid,email:user.email,role:'technician',name:user.email};
           }
         }catch(e){currentUser={uid:user.uid,email:user.email,role:'technician',name:user.email};}
+        if(currentUser.status==='disabled'){
+          currentUser=null;
+          try{ await signOut(auth); }catch(_){}
+          showDisabledMessage();
+          return;
+        }
         showApp();
         document.getElementById('firebase-status').innerHTML='<span style="color:var(--green-text)">✓ Firebase connected. Data sync active.</span>';
         document.getElementById('sync-bar').classList.add('show');
         document.getElementById('sync-msg').textContent='Cloud sync active - '+currentUser.name+' ('+currentUser.role+')';
         await loadFromCloud();
         listenCloud();
+        // Signed in: if an admin disables this account, sign out straight away
+        try{
+          const {onSnapshot:watch}=await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+          if(window._selfWatch) window._selfWatch();
+          window._selfWatch=watch(doc(db,'users',user.uid),s=>{
+            if(s.exists()&&s.data().status==='disabled'){
+              try{ sessionStorage.setItem('st_disabled','1'); }catch(_){}
+              signOut(auth).finally(()=>location.reload());
+            }
+          });
+        }catch(e){}
       } else {
         currentUser=null;
         showLogin();
@@ -3073,14 +3089,16 @@ const ROLE_COLORS={admin:'var(--red-bg)',manager:'var(--blue-bg)',engineer:'var(
 const ROLE_TEXT={admin:'var(--red-text)',manager:'var(--blue-text)',engineer:'var(--green-text)',technician:'var(--text2)',finance:'#7C3AED',purchasing:'#B45309'};
 
 function renderUserList(){
-  const html=allUsers.map(u=>`
-    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+  const list=[...allUsers].sort((a,b)=>(a.status==='disabled')-(b.status==='disabled'));
+  const html=list.map(u=>`
+    <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;${u.status==='disabled'?'opacity:.6':''}">
       <div style="width:38px;height:38px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--blue-text);flex-shrink:0">
         ${(u.name||u.email||'?')[0].toUpperCase()}
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:14px">${u.name||'-'}</div>
         <div style="font-size:12px;color:var(--text2);margin-top:2px">${u.email||'-'}</div>
+        ${u.status==='disabled'?'<div style="font-size:10.5px;font-weight:700;color:var(--red-text);margin-top:3px;text-transform:uppercase;letter-spacing:.3px">Disabled — cannot sign in</div>':''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <span style="font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;background:${ROLE_COLORS[u.role]||'var(--bg2)'};color:${ROLE_TEXT[u.role]||'var(--text2)'}">
@@ -3089,6 +3107,7 @@ function renderUserList(){
         <select onchange="updateUserRole('${u.uid}',this.value)" style="font-size:11px;padding:3px 6px;border:0.5px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text2);cursor:pointer">
           ${['technician','engineer','manager','finance','purchasing','production','admin'].map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
         </select>
+        ${currentUser&&u.uid!==currentUser.uid?`<button class="act" onclick="toggleUserStatus('${u.uid}')" style="padding:3px 8px;font-size:10.5px;${u.status==='disabled'?'color:var(--green-text)':'color:var(--red-text)'}">${u.status==='disabled'?'Enable':'Disable'}</button>`:''}
       </div>
     </div>`).join('');
   document.getElementById('user-list').innerHTML=html||'<div class="empty" style="padding:20px 0">No users yet</div>';
@@ -3096,6 +3115,29 @@ function renderUserList(){
   const ul2=document.getElementById('users-section-list');
   if(ul2) ul2.innerHTML=html||'<div class="empty" style="padding:20px 0">No users yet</div>';
 }
+
+// Staff who left: disable instead of deleting (their history stays). A disabled user
+// cannot sign in, and is signed out at once if the app is open.
+async function toggleUserStatus(uid){
+  if(!can('users'))return;
+  const user=allUsers.find(u=>u.uid===uid);
+  if(!user||!currentUser||uid===currentUser.uid)return;
+  const next=user.status==='disabled'?'active':'disabled';
+  if(next==='disabled'&&!confirm('Disable '+(user.name||user.email)+'?\n\nThey will be signed out and cannot sign in again until you enable them.'))return;
+  try{
+    const {doc,setDoc,db}=window._fs;
+    await setDoc(doc(db,'users',uid),{status:next,statusBy:currentUser.uid,statusAt:Date.now()},{merge:true});
+    user.status=next; renderUserList();
+    toast(next==='disabled'?'User disabled':'User enabled ✓');
+  }catch(e){toast('Failed to update user: '+(e.code||e.message));}
+}
+function showDisabledMessage(){
+  showLogin();
+  const el=document.getElementById('login-error'), btn=document.getElementById('login-btn');
+  if(el){ el.textContent='Your account has been disabled. Contact your administrator.'; el.style.display='block'; }
+  if(btn){ btn.textContent='Sign In'; btn.disabled=false; }
+}
+try{ if(sessionStorage.getItem('st_disabled')){ sessionStorage.removeItem('st_disabled'); document.addEventListener('DOMContentLoaded',()=>setTimeout(showDisabledMessage,300)); } }catch(e){}
 
 async function updateUserRole(uid, newRole){
   if(!can('users'))return;

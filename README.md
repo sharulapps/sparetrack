@@ -53,3 +53,11 @@ for part + machine pairs with 3+ OUTs and a steady life. Stock check, "Done → 
 **Reports → Spare Part Budget**: next 12 months per part = estimated use per year × Unit Cost, with
 contingency (default +10%), "to buy" after stock on hand, breakdown by category / supplier / location,
 and Excel export. Parts without a Unit Cost are flagged.
+
+## Disable a user (staff who left)
+
+Users → **Disable** on the person (not on yourself). Stored as `users/{uid}.status = 'disabled'`.
+They are signed out at once if the app is open and cannot sign in until **Enable**. Their history stays.
+For a full lock-out also disable the login in Firebase Console → Authentication → Users → ⋮ → Disable account
+(the app check runs in the browser; Firestore rules decide what a signed-in account can reach).
+Test (emulators): `npm run e2e:v1-users` in sharulapps/sparetrak.
