@@ -61,3 +61,9 @@ They are signed out at once if the app is open and cannot sign in until **Enable
 For a full lock-out also disable the login in Firebase Console → Authentication → Users → ⋮ → Disable account
 (the app check runs in the browser; Firestore rules decide what a signed-in account can reach).
 Test (emulators): `npm run e2e:v1-users` in sharulapps/sparetrak.
+
+## Stock Valuation
+
+KPI card **Stock Value** (stock × Unit Cost, change vs 30 days ago) and **Reports → Stock Valuation**:
+total, dead stock (no OUT for 6/12/24 months), value above Max Stock, breakdown by category / location /
+supplier, Excel export.
