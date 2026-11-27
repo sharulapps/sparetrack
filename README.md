@@ -86,3 +86,15 @@ Menu → **Suppliers**. One record per supplier: contact person, phone, email, l
 
 Data: root collection `suppliers/{id}`.
 
+## Audit Trail
+
+Menu → **Audit Trail** (admin and manager). Every change is recorded with date/time, user, role, action, item and old → new values:
+parts added / edited / deleted, stock IN / OUT / return / stocktake, OUT requests approved / rejected, users added / role changed / disabled / enabled, suppliers, settings.
+- Filter by type and period (7 days to 12 months), search, Export Excel. **View history** in Edit Part opens the trail for that part.
+- Stock moves are logged by their transaction (no duplicate "Part edited" line); a stock change typed in Edit Part is logged as an edit.
+- **Last updated** — each part stores `lastBy` / `lastAt`; Edit Part shows "Last updated <date> by <name>".
+- How: the block wraps `window._fs` writes, so existing functions are unchanged. An entry is written after the change succeeds; if it cannot be saved the change itself still goes through.
+- Recording starts from the day this version is deployed.
+
+Data: root collection `auditLog/{id}`. Tip: in the live rules allow create for signed-in users and block update/delete on `auditLog` so entries cannot be changed.
+
